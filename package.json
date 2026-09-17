@@ -1,0 +1,33 @@
+{
+  "name": "uidl-builder",
+  "version": "0.1.0",
+  "private": false,
+  "description": "Visual schema studio and visual editor for UIDL documents, built with UIDL-Runtime",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "clsx": "^2.1.1",
+    "lucide-react": "^1.16.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "tailwind-merge": "^3.6.0",
+    "uidl-runtime": "file:../UIDL-Runtime",
+    "zod": "^3.24.2",
+    "zustand": "^5.0.3"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.0.0",
+    "@types/node": "^22.13.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "tailwindcss": "^4.0.0",
+    "typescript": "~5.7.3",
+    "vite": "^6.1.0"
+  }
+}
