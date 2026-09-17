@@ -6,6 +6,9 @@ import {
   deleteNodeById,
   duplicateNodeById,
   patchNodeProps,
+  patchNodeEvents,
+  patchNodeStyle,
+  moveNode,
   generateNodeId,
 } from "./documentOps";
 import { getWidgetDefaultProps } from "../lib/uidlBridge";
@@ -46,6 +49,9 @@ export interface BuilderState {
   deleteNode: (nodeId: string) => void;
   duplicateNode: (nodeId: string) => void;
   updateNodeProps: (nodeId: string, props: Record<string, unknown>) => void;
+  updateNodeEvents: (nodeId: string, events: Record<string, unknown>) => void;
+  updateNodeStyle: (nodeId: string, style: Record<string, unknown>) => void;
+  moveNode: (sourceId: string, targetParentId: string, targetIndex?: number) => void;
   setDocument: (document: UIDLDocument) => void;
   loadTemplate: (templateId: string) => void;
   
@@ -170,6 +176,72 @@ export const useBuilderStore = create<BuilderState>((set, get) => ({
   updateNodeProps: (nodeId, newProps) => {
     const { document, history } = get();
     const newRoot = patchNodeProps(document.root, nodeId, newProps);
+    const newDoc: UIDLDocument = {
+      ...document,
+      root: newRoot,
+    };
+
+    const val = validateDocument(newDoc);
+
+    set({
+      document: newDoc,
+      validationErrors: val.errors,
+      history: {
+        past: [...history.past, document],
+        future: [],
+      },
+      canUndo: true,
+      canRedo: false,
+    });
+  },
+
+  updateNodeEvents: (nodeId, newEvents) => {
+    const { document, history } = get();
+    const newRoot = patchNodeEvents(document.root, nodeId, newEvents);
+    const newDoc: UIDLDocument = {
+      ...document,
+      root: newRoot,
+    };
+
+    const val = validateDocument(newDoc);
+
+    set({
+      document: newDoc,
+      validationErrors: val.errors,
+      history: {
+        past: [...history.past, document],
+        future: [],
+      },
+      canUndo: true,
+      canRedo: false,
+    });
+  },
+
+  updateNodeStyle: (nodeId, newStyle) => {
+    const { document, history } = get();
+    const newRoot = patchNodeStyle(document.root, nodeId, newStyle);
+    const newDoc: UIDLDocument = {
+      ...document,
+      root: newRoot,
+    };
+
+    const val = validateDocument(newDoc);
+
+    set({
+      document: newDoc,
+      validationErrors: val.errors,
+      history: {
+        past: [...history.past, document],
+        future: [],
+      },
+      canUndo: true,
+      canRedo: false,
+    });
+  },
+
+  moveNode: (sourceId, targetParentId, targetIndex) => {
+    const { document, history } = get();
+    const newRoot = moveNode(document.root, sourceId, targetParentId, targetIndex);
     const newDoc: UIDLDocument = {
       ...document,
       root: newRoot,

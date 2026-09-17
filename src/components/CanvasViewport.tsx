@@ -1,8 +1,8 @@
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useState } from "react";
 import { UIDocumentRenderer, meridianDarkTheme, meridianLightTheme } from "uidl-runtime";
 import { useBuilderStore } from "../core/builderStore";
 import { SelectionOverlay } from "./SelectionOverlay";
-import { Monitor, Tablet, Smartphone, ZoomIn, ZoomOut, Grid, Eye } from "lucide-react";
+import { Monitor, Tablet, Smartphone, ZoomIn, ZoomOut, Grid, Eye, Plus } from "lucide-react";
 import clsx from "clsx";
 
 export function CanvasViewport() {
@@ -19,9 +19,11 @@ export function CanvasViewport() {
     setShowGrid,
     setPreviewMode,
     selectNode,
+    addNode,
   } = useBuilderStore();
 
   const canvasRef = useRef<HTMLDivElement>(null);
+  const [isDragOver, setIsDragOver] = useState(false);
 
   // Click-to-select in canvas
   const handleCanvasClick = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -34,6 +36,35 @@ export function CanvasViewport() {
         selectNode(id);
       }
     }
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    if (previewMode) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "copy";
+    if (!isDragOver) setIsDragOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    if (previewMode) return;
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+      setIsDragOver(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    if (previewMode) return;
+    e.preventDefault();
+    setIsDragOver(false);
+
+    const widgetType = e.dataTransfer.getData("application/uidl-widget");
+    if (!widgetType) return;
+
+    // Check if drop target is a specific element inside canvas
+    const targetElement = (e.target as HTMLElement).closest("[data-uidl-id], [id]");
+    const targetId = targetElement?.getAttribute("data-uidl-id") || targetElement?.id;
+
+    addNode(targetId || selectedNodeId, widgetType);
   };
 
   const getViewportWidthClass = () => {
@@ -162,16 +193,29 @@ export function CanvasViewport() {
         <div
           ref={canvasRef}
           onClick={handleCanvasClick}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
           style={{
             transform: `scale(${canvasZoom / 100})`,
             transformOrigin: "top center",
           }}
           className={clsx(
-            "transition-all duration-200 shadow-2xl rounded-2xl overflow-hidden border border-white/15 bg-background",
+            "transition-all duration-200 shadow-2xl rounded-2xl overflow-hidden border border-white/15 bg-background relative",
             getViewportWidthClass(),
             previewMode ? "cursor-default" : "cursor-pointer ring-1 ring-white/10"
           )}
         >
+          {/* Drag over visual indicator */}
+          {isDragOver && (
+            <div className="absolute inset-0 z-50 bg-cyan-500/10 border-2 border-dashed border-cyan-400 rounded-2xl flex flex-col items-center justify-center pointer-events-none backdrop-blur-[1px]">
+              <div className="bg-black/90 px-4 py-2 rounded-xl border border-cyan-500/50 text-cyan-300 font-semibold text-xs shadow-2xl flex items-center gap-2">
+                <Plus className="w-4 h-4 text-cyan-400 animate-pulse" />
+                <span>Drop to insert widget into canvas</span>
+              </div>
+            </div>
+          )}
+
           {/* Device Mockup Header for Tablet/Mobile */}
           {viewport !== "desktop" && (
             <div className="h-6 bg-[#161b22] border-b border-white/10 flex items-center justify-between px-3 text-[10px] text-slate-400 font-mono select-none">

@@ -1,13 +1,39 @@
-import React from "react";
+import React, { useState } from "react";
 import type { UIDLNode } from "uidl-runtime";
 import { useBuilderStore } from "../core/builderStore";
 import { buildFlatNodeList } from "../core/documentOps";
-import { ChevronRight, ChevronDown, Layers, Trash2, Copy, Eye } from "lucide-react";
+import { ChevronRight, ChevronDown, Layers, Trash2, Copy, Plus } from "lucide-react";
 import clsx from "clsx";
 
 export function LayerTreePanel() {
-  const { document, selectedNodeId, selectNode, deleteNode, duplicateNode } = useBuilderStore();
+  const { document, selectedNodeId, selectNode, deleteNode, duplicateNode, addNode } = useBuilderStore();
+  const [dropTargetId, setDropTargetId] = useState<string | null>(null);
   const flatNodes = buildFlatNodeList(document.root);
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>, nodeId: string) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "copy";
+    if (dropTargetId !== nodeId) {
+      setDropTargetId(nodeId);
+    }
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>, nodeId: string) => {
+    if (dropTargetId === nodeId) {
+      setDropTargetId(null);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>, nodeId: string) => {
+    e.preventDefault();
+    setDropTargetId(null);
+
+    const widgetType = e.dataTransfer.getData("application/uidl-widget");
+    if (widgetType) {
+      addNode(nodeId, widgetType);
+      selectNode(nodeId);
+    }
+  };
 
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden bg-[#161b22]">
@@ -26,6 +52,7 @@ export function LayerTreePanel() {
       <div className="flex-1 overflow-y-auto p-2 space-y-0.5 font-mono text-xs">
         {flatNodes.map(({ node, depth }) => {
           const isSelected = selectedNodeId === node.id;
+          const isDropTarget = dropTargetId === node.id;
           const hasChildren = node.children && node.children.length > 0;
 
           return (
@@ -35,10 +62,15 @@ export function LayerTreePanel() {
                 e.stopPropagation();
                 selectNode(node.id);
               }}
+              onDragOver={(e) => handleDragOver(e, node.id)}
+              onDragLeave={(e) => handleDragLeave(e, node.id)}
+              onDrop={(e) => handleDrop(e, node.id)}
               style={{ paddingLeft: `${depth * 14 + 8}px` }}
               className={clsx(
-                "flex items-center justify-between py-1.5 pr-2 rounded-lg cursor-pointer transition-colors group",
-                isSelected
+                "flex items-center justify-between py-1.5 pr-2 rounded-lg cursor-pointer transition-colors group relative",
+                isDropTarget
+                  ? "bg-cyan-500/30 text-white ring-2 ring-cyan-400 shadow-md"
+                  : isSelected
                   ? "bg-cyan-500/20 text-cyan-300 font-semibold border border-cyan-500/30"
                   : "text-slate-300 hover:bg-white/[0.04] hover:text-white"
               )}
@@ -59,30 +91,32 @@ export function LayerTreePanel() {
                 </span>
               </div>
 
-              {node.id !== document.root.id && (
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      duplicateNode(node.id);
-                    }}
-                    title="Duplicate node"
-                    className="p-1 hover:text-cyan-400 text-slate-500 transition-colors"
-                  >
-                    <Copy className="w-3 h-3" />
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      deleteNode(node.id);
-                    }}
-                    title="Delete node"
-                    className="p-1 hover:text-rose-400 text-slate-500 transition-colors"
-                  >
-                    <Trash2 className="w-3 h-3" />
-                  </button>
-                </div>
-              )}
+              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                {node.id !== document.root.id && (
+                  <>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        duplicateNode(node.id);
+                      }}
+                      title="Duplicate node"
+                      className="p-1 hover:text-cyan-400 text-slate-500 transition-colors"
+                    >
+                      <Copy className="w-3 h-3" />
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        deleteNode(node.id);
+                      }}
+                      title="Delete node"
+                      className="p-1 hover:text-rose-400 text-slate-500 transition-colors"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
           );
         })}

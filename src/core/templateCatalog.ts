@@ -1,15 +1,72 @@
 import type { UIDLDocument } from "uidl-runtime";
 
+import hospitalMedikaJson from "../templates/data/hospital-medika-console.json";
+import koperasiBmtJson from "../templates/data/koperasi-bmt-console.json";
+import helpdeskJson from "../templates/data/helpdesk-console.json";
+import crmPipelineJson from "../templates/data/crm-pipeline-console.json";
+import schoolAbcJson from "../templates/data/school-abc-console.json";
+import saasGrowthJson from "../templates/data/saas-growth-suite.json";
+
+export type TemplateCategory = "industry" | "dashboard" | "form" | "blank";
+
 export interface DocumentTemplate {
   id: string;
   name: string;
-  category: "dashboard" | "form" | "table" | "blank";
+  category: TemplateCategory;
   description: string;
   tags: string[];
   document: UIDLDocument;
 }
 
 export const TEMPLATES: DocumentTemplate[] = [
+  {
+    id: "hospital-medika-console",
+    name: "Healthcare & Hospital EMR",
+    category: "industry",
+    description: "Outpatient queue, clinic visit metrics, FEFO drug inventory, and BPJS claims verification console.",
+    tags: ["Healthcare", "EMR", "Hospital", "BPJS"],
+    document: hospitalMedikaJson as unknown as UIDLDocument,
+  },
+  {
+    id: "koperasi-bmt-console",
+    name: "Islamic Microfinance & Koperasi",
+    category: "industry",
+    description: "Sharia savings composition, SHU distribution tree, financing facilities, and mudharabah accounts.",
+    tags: ["Finance", "Koperasi", "Banking", "BMT"],
+    document: koperasiBmtJson as unknown as UIDLDocument,
+  },
+  {
+    id: "helpdesk-console",
+    name: "CloudDesk IT Service & Helpdesk",
+    category: "industry",
+    description: "Incident management, priority queue, SLA countdowns, and knowledge base canned responses.",
+    tags: ["ITSM", "Tickets", "Helpdesk", "Support"],
+    document: helpdeskJson as unknown as UIDLDocument,
+  },
+  {
+    id: "crm-pipeline-console",
+    name: "Sales CRM & Deal Pipeline",
+    category: "industry",
+    description: "Opportunity pipeline stages, quota attainment, lead tracking, and sales activity cards.",
+    tags: ["CRM", "Sales", "Pipeline", "Deals"],
+    document: crmPipelineJson as unknown as UIDLDocument,
+  },
+  {
+    id: "school-abc-console",
+    name: "School Academic & Fee Console",
+    category: "industry",
+    description: "Tuition collection trends, student receivables, payroll payables, and balanced ledger postings.",
+    tags: ["Education", "Academic", "Billing", "School"],
+    document: schoolAbcJson as unknown as UIDLDocument,
+  },
+  {
+    id: "saas-growth-suite",
+    name: "SaaS Growth & MRR Analytics",
+    category: "dashboard",
+    description: "Multi-funnel conversion rates, MRR growth trends, cohort churn, and subscription plans.",
+    tags: ["SaaS", "Growth", "MRR", "Funnel"],
+    document: saasGrowthJson as unknown as UIDLDocument,
+  },
   {
     id: "dashboard-analytics",
     name: "SaaS Metrics Dashboard",

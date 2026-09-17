@@ -125,6 +125,64 @@ export function patchNodeProps(root: UIDLNode, id: string, newProps: Record<stri
   return rootClone;
 }
 
+export function patchNodeEvents(root: UIDLNode, id: string, events: Record<string, unknown>): UIDLNode {
+  const rootClone: UIDLNode = JSON.parse(JSON.stringify(root));
+  const target = findNodeById(rootClone, id);
+
+  if (target) {
+    target.events = {
+      ...(target.events || {}),
+      ...events,
+    };
+  }
+
+  return rootClone;
+}
+
+export function patchNodeStyle(root: UIDLNode, id: string, style: Record<string, unknown>): UIDLNode {
+  const rootClone: UIDLNode = JSON.parse(JSON.stringify(root));
+  const target = findNodeById(rootClone, id);
+
+  if (target) {
+    target.style = {
+      ...(target.style || {}),
+      ...style,
+    };
+  }
+
+  return rootClone;
+}
+
+export function moveNode(root: UIDLNode, sourceId: string, targetParentId: string, targetIndex?: number): UIDLNode {
+  if (sourceId === root.id || sourceId === targetParentId) return root;
+
+  const rootClone: UIDLNode = JSON.parse(JSON.stringify(root));
+  const sourceNode = findNodeById(rootClone, sourceId);
+  if (!sourceNode) return root;
+
+  // Remove source from its current parent
+  const parentInfo = findParentNode(rootClone, sourceId);
+  if (!parentInfo || !parentInfo.parent.children) return root;
+
+  parentInfo.parent.children.splice(parentInfo.index, 1);
+
+  // Insert into new target parent
+  const targetParent = findNodeById(rootClone, targetParentId);
+  if (!targetParent) return rootClone;
+
+  if (!targetParent.children) {
+    targetParent.children = [];
+  }
+
+  if (typeof targetIndex === "number" && targetIndex >= 0 && targetIndex <= targetParent.children.length) {
+    targetParent.children.splice(targetIndex, 0, sourceNode);
+  } else {
+    targetParent.children.push(sourceNode);
+  }
+
+  return rootClone;
+}
+
 export function buildFlatNodeList(node: UIDLNode, depth = 0): Array<{ node: UIDLNode; depth: number }> {
   const list: Array<{ node: UIDLNode; depth: number }> = [{ node, depth }];
   if (node.children && Array.isArray(node.children)) {
