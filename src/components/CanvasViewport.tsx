@@ -1,8 +1,9 @@
 import React, { useRef, useState } from "react";
 import { UIDocumentRenderer, meridianDarkTheme, meridianLightTheme } from "uidl-runtime";
 import { useBuilderStore } from "../core/builderStore";
+import { findNodeAncestors } from "../core/documentOps";
 import { SelectionOverlay } from "./SelectionOverlay";
-import { Monitor, Tablet, Smartphone, ZoomIn, ZoomOut, Grid, Eye, Plus } from "lucide-react";
+import { Monitor, Tablet, Smartphone, ZoomIn, ZoomOut, Grid, Eye, Plus, ChevronRight } from "lucide-react";
 import clsx from "clsx";
 
 export function CanvasViewport() {
@@ -24,6 +25,9 @@ export function CanvasViewport() {
 
   const canvasRef = useRef<HTMLDivElement>(null);
   const [isDragOver, setIsDragOver] = useState(false);
+
+  // Breadcrumb ancestors hierarchy
+  const ancestors = !previewMode && selectedNodeId ? findNodeAncestors(document.root, selectedNodeId) : null;
 
   // Click-to-select in canvas
   const handleCanvasClick = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -80,7 +84,7 @@ export function CanvasViewport() {
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full overflow-hidden bg-[#0d1117] select-none">
+    <div className="flex-1 flex flex-col h-full overflow-hidden bg-[#0d1117] select-none relative">
       {/* Canvas Controls Bar */}
       <div className="h-10 px-4 border-b border-white/10 bg-[#161b22] flex items-center justify-between shrink-0 text-xs">
         {/* Viewport device switcher */}
@@ -236,6 +240,35 @@ export function CanvasViewport() {
           </div>
         </div>
       </div>
+
+      {/* Floating Canvas Breadcrumb Hierarchy */}
+      {!previewMode && ancestors && ancestors.length > 0 && (
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 bg-[#161b22]/95 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-white/15 shadow-2xl flex items-center gap-1 text-xs text-slate-300 font-mono max-w-[90vw] overflow-x-auto">
+          {ancestors.map((node, index) => {
+            const isSelected = node.id === selectedNodeId;
+            return (
+              <React.Fragment key={node.id}>
+                {index > 0 && <ChevronRight className="w-3 h-3 text-slate-500 shrink-0" />}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    selectNode(node.id);
+                  }}
+                  className={clsx(
+                    "px-2 py-0.5 rounded-md transition-colors whitespace-nowrap flex items-center gap-1",
+                    isSelected
+                      ? "text-cyan-300 font-semibold bg-cyan-500/20 border border-cyan-500/30 shadow-sm"
+                      : "text-slate-400 hover:text-white hover:bg-white/10"
+                  )}
+                  title={`Select ${node.type} (${node.id})`}
+                >
+                  <span>{node.type}</span>
+                </button>
+              </React.Fragment>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

@@ -11,6 +11,7 @@ import {
   moveNode,
   insertSlotChild,
   removeSlotChild,
+  patchNodeResponsiveProps,
   generateNodeId,
 } from "./documentOps";
 import { getWidgetDefaultProps } from "../lib/uidlBridge";
@@ -31,6 +32,7 @@ export interface BuilderState {
   showGrid: boolean;
   activeSidebarTab: SidebarTab;
   validationErrors: ValidationErrorItem[];
+  isCommandPaletteOpen: boolean;
   history: {
     past: UIDLDocument[];
     future: UIDLDocument[];
@@ -45,6 +47,7 @@ export interface BuilderState {
   setPreviewMode: (preview: boolean) => void;
   setShowGrid: (show: boolean) => void;
   setActiveSidebarTab: (tab: SidebarTab) => void;
+  setIsCommandPaletteOpen: (open: boolean) => void;
   
   // Tree manipulations
   addNode: (targetParentId: string | null, type: string) => void;
@@ -53,6 +56,7 @@ export interface BuilderState {
   updateNodeProps: (nodeId: string, props: Record<string, unknown>) => void;
   updateNodeEvents: (nodeId: string, events: Record<string, unknown>) => void;
   updateNodeStyle: (nodeId: string, style: Record<string, unknown>) => void;
+  updateNodeResponsiveProps: (nodeId: string, breakpoint: "tablet" | "mobile", props: Record<string, unknown>) => void;
   moveNode: (sourceId: string, targetParentId: string, targetIndex?: number) => void;
   insertNodeIntoSlot: (parentId: string, slotName: string, type: string) => void;
   removeNodeFromSlot: (parentId: string, slotName: string, childId: string) => void;
@@ -82,6 +86,7 @@ export const useBuilderStore = create<BuilderState>((set, get) => ({
   showGrid: true,
   activeSidebarTab: "palette",
   validationErrors: [],
+  isCommandPaletteOpen: false,
   history: {
     past: [],
     future: [],
@@ -97,6 +102,7 @@ export const useBuilderStore = create<BuilderState>((set, get) => ({
   setPreviewMode: (previewMode) => set({ previewMode }),
   setShowGrid: (showGrid) => set({ showGrid }),
   setActiveSidebarTab: (activeSidebarTab) => set({ activeSidebarTab }),
+  setIsCommandPaletteOpen: (isCommandPaletteOpen) => set({ isCommandPaletteOpen }),
 
   addNode: (targetParentId, type) => {
     const { document, history, selectedNodeId } = get();
@@ -227,6 +233,28 @@ export const useBuilderStore = create<BuilderState>((set, get) => ({
   updateNodeStyle: (nodeId, newStyle) => {
     const { document, history } = get();
     const newRoot = patchNodeStyle(document.root, nodeId, newStyle);
+    const newDoc: UIDLDocument = {
+      ...document,
+      root: newRoot,
+    };
+
+    const val = validateDocument(newDoc);
+
+    set({
+      document: newDoc,
+      validationErrors: val.errors,
+      history: {
+        past: [...history.past, document],
+        future: [],
+      },
+      canUndo: true,
+      canRedo: false,
+    });
+  },
+
+  updateNodeResponsiveProps: (nodeId, breakpoint, newProps) => {
+    const { document, history } = get();
+    const newRoot = patchNodeResponsiveProps(document.root, nodeId, breakpoint, newProps);
     const newDoc: UIDLDocument = {
       ...document,
       root: newRoot,

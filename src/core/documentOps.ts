@@ -223,3 +223,52 @@ export function removeSlotChild(root: UIDLNode, parentId: string, slotName: stri
   return rootClone;
 }
 
+export function findNodeAncestors(root: UIDLNode, targetId: string, currentPath: UIDLNode[] = []): UIDLNode[] | null {
+  const path = [...currentPath, root];
+  if (root.id === targetId) return path;
+
+  if (root.children && Array.isArray(root.children)) {
+    for (const child of root.children) {
+      const found = findNodeAncestors(child, targetId, path);
+      if (found) return found;
+    }
+  }
+
+  if (root.slots) {
+    for (const slotChildren of Object.values(root.slots)) {
+      for (const child of slotChildren) {
+        const found = findNodeAncestors(child, targetId, path);
+        if (found) return found;
+      }
+    }
+  }
+
+  return null;
+}
+
+export function patchNodeResponsiveProps(
+  root: UIDLNode,
+  id: string,
+  breakpoint: "tablet" | "mobile",
+  props: Record<string, unknown>
+): UIDLNode {
+  const rootClone: UIDLNode = JSON.parse(JSON.stringify(root));
+  const target = findNodeById(rootClone, id);
+
+  if (target) {
+    if (!target.responsive) {
+      target.responsive = {};
+    }
+    const currentBp = (target.responsive[breakpoint] as { props?: Record<string, unknown> }) || {};
+    target.responsive[breakpoint] = {
+      ...currentBp,
+      props: {
+        ...(currentBp.props || {}),
+        ...props,
+      },
+    };
+  }
+
+  return rootClone;
+}
+

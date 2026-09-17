@@ -8,6 +8,7 @@ import { PropertyInspectorPanel } from "./components/PropertyInspectorPanel";
 import { CodeMirrorEditor } from "./components/CodeMirrorEditor";
 import { ImportExportModal } from "./components/ImportExportModal";
 import { StateDataModal } from "./components/StateDataModal";
+import { CommandPaletteModal } from "./components/CommandPaletteModal";
 import {
   Boxes,
   Layers,
@@ -24,6 +25,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Database,
+  Search,
 } from "lucide-react";
 import clsx from "clsx";
 
@@ -36,6 +38,8 @@ export default function App() {
     activeSidebarTab,
     validationErrors,
     selectedNodeId,
+    isCommandPaletteOpen,
+    setIsCommandPaletteOpen,
     undo,
     redo,
     duplicateNode,
@@ -63,6 +67,13 @@ export default function App() {
 
       const isMac = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
       const isCmdOrCtrl = isMac ? e.metaKey : e.ctrlKey;
+
+      // Command Palette: Cmd+K / Ctrl+K
+      if (isCmdOrCtrl && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setIsCommandPaletteOpen(!isCommandPaletteOpen);
+        return;
+      }
 
       // Undo: Ctrl+Z (without Shift)
       if (isCmdOrCtrl && e.key.toLowerCase() === "z" && !e.shiftKey) {
@@ -106,7 +117,7 @@ export default function App() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [canUndo, canRedo, selectedNodeId, document.root.id, undo, redo, duplicateNode, deleteNode, selectNode]);
+  }, [canUndo, canRedo, selectedNodeId, document.root.id, undo, redo, duplicateNode, deleteNode, selectNode, isCommandPaletteOpen, setIsCommandPaletteOpen]);
 
   const openExportModal = () => {
     setModalDefaultTab("export");
@@ -171,6 +182,19 @@ export default function App() {
               <Redo2 className="w-3.5 h-3.5" />
             </button>
           </div>
+
+          {/* Quick Find Command Palette button */}
+          <button
+            onClick={() => setIsCommandPaletteOpen(true)}
+            className="flex items-center gap-2 px-2.5 py-1 rounded-lg bg-black/40 border border-white/10 text-slate-400 hover:text-white hover:border-cyan-500/40 text-xs transition-colors"
+            title="Open Command Palette (Cmd+K)"
+          >
+            <Search className="w-3.5 h-3.5 text-cyan-400" />
+            <span className="hidden lg:inline text-[11px]">Quick Find</span>
+            <kbd className="hidden sm:inline-block px-1.5 py-0.2 rounded bg-white/5 border border-white/10 text-[10px] font-mono text-slate-400">
+              ⌘K
+            </kbd>
+          </button>
 
           {/* Validation badge */}
           <div
@@ -384,6 +408,11 @@ export default function App() {
       <StateDataModal
         isOpen={isStateModalOpen}
         onClose={() => setIsStateModalOpen(false)}
+      />
+
+      <CommandPaletteModal
+        onOpenExportModal={openExportModal}
+        onOpenStateModal={() => setIsStateModalOpen(true)}
       />
     </div>
   );

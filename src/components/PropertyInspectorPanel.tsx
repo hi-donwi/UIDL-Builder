@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useBuilderStore } from "../core/builderStore";
 import { findNodeById } from "../core/documentOps";
 import { getWidgetManifest } from "../lib/uidlBridge";
@@ -18,6 +18,12 @@ import {
   Navigation,
   Database,
   Layers,
+  Link2,
+  RotateCcw,
+  Smartphone,
+  Tablet,
+  Monitor,
+  Check,
 } from "lucide-react";
 import clsx from "clsx";
 
@@ -31,15 +37,24 @@ export function PropertyInspectorPanel() {
   const {
     document,
     selectedNodeId,
+    viewport,
     updateNodeProps,
     updateNodeEvents,
     updateNodeStyle,
+    updateNodeResponsiveProps,
     insertNodeIntoSlot,
     removeNodeFromSlot,
   } = useBuilderStore();
+
   const [activeTab, setActiveTab] = useState<TabMode>("props");
   const [newEventTrigger, setNewEventTrigger] = useState("onClick");
   const [selectedSlotWidgetType, setSelectedSlotWidgetType] = useState<Record<string, string>>({});
+  const [targetBreakpoint, setTargetBreakpoint] = useState<"desktop" | "tablet" | "mobile">(viewport);
+
+  // Sync target breakpoint when canvas viewport changes
+  useEffect(() => {
+    setTargetBreakpoint(viewport);
+  }, [viewport]);
 
   if (!selectedNodeId) {
     return (
@@ -60,14 +75,30 @@ export function PropertyInspectorPanel() {
   }
 
   const manifest = getWidgetManifest(selectedNode.type);
-  const currentProps = selectedNode.props || {};
+
+  // Determine active props based on breakpoint
+  const baseProps = selectedNode.props || {};
+  const responsiveConfig = (selectedNode.responsive || {}) as Record<string, { props?: Record<string, unknown> }>;
+  const currentProps =
+    targetBreakpoint === "desktop"
+      ? baseProps
+      : { ...baseProps, ...(responsiveConfig[targetBreakpoint]?.props || {}) };
+
   const currentEvents = (selectedNode.events || {}) as Record<string, Record<string, unknown>>;
   const currentStyle = (selectedNode.style || {}) as Record<string, unknown>;
 
+  const availableStateKeys = Object.keys(document.state || {});
+
   const handlePropChange = (propName: string, value: unknown) => {
-    updateNodeProps(selectedNode.id, {
-      [propName]: value,
-    });
+    if (targetBreakpoint === "desktop") {
+      updateNodeProps(selectedNode.id, {
+        [propName]: value,
+      });
+    } else {
+      updateNodeResponsiveProps(selectedNode.id, targetBreakpoint, {
+        [propName]: value,
+      });
+    }
   };
 
   const handleStyleChange = (key: string, value: unknown) => {
@@ -184,6 +215,15 @@ export function PropertyInspectorPanel() {
     updateNodeEvents(selectedNode.id, updated);
   };
 
+  // Helper to check dynamic binding mode
+  const isBindObject = (val: unknown): val is { $bind: string } => {
+    return typeof val === "object" && val !== null && "$bind" in val;
+  };
+
+  const isExprObject = (val: unknown): val is { $expr: string } => {
+    return typeof val === "object" && val !== null && "$expr" in val;
+  };
+
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden bg-[#161b22] text-xs">
       {/* Header Info */}
@@ -197,10 +237,64 @@ export function PropertyInspectorPanel() {
             {manifest?.category || "custom"}
           </span>
         </div>
-        <div className="flex items-center gap-1 mt-1 text-[10px] text-slate-500 font-mono">
-          <Hash className="w-3 h-3 text-slate-600" />
-          <span>{selectedNode.id}</span>
+        <div className="flex items-center justify-between mt-1 text-[10px] text-slate-500 font-mono">
+          <div className="flex items-center gap-1">
+            <Hash className="w-3 h-3 text-slate-600" />
+            <span>{selectedNode.id}</span>
+          </div>
         </div>
+
+        {/* Breakpoint Overrides Selector */}
+        <div className="mt-2.5 pt-2 border-t border-white/5 flex items-center justify-between">
+          <span className="text-[10px] text-slate-400 uppercase font-semibold">Scope:</span>
+          <div className="flex items-center gap-1 bg-black/40 p-0.5 rounded-lg border border-white/10">
+            <button
+              onClick={() => setTargetBreakpoint("desktop")}
+              className={clsx(
+                "px-2 py-0.5 rounded text-[10px] font-medium transition-colors flex items-center gap-1",
+                targetBreakpoint === "desktop"
+                  ? "bg-cyan-500/20 text-cyan-300 font-semibold"
+                  : "text-slate-400 hover:text-white"
+              )}
+              title="Base Desktop Properties"
+            >
+              <Monitor className="w-3 h-3" />
+              <span>Base</span>
+            </button>
+            <button
+              onClick={() => setTargetBreakpoint("tablet")}
+              className={clsx(
+                "px-2 py-0.5 rounded text-[10px] font-medium transition-colors flex items-center gap-1",
+                targetBreakpoint === "tablet"
+                  ? "bg-cyan-500/20 text-cyan-300 font-semibold"
+                  : "text-slate-400 hover:text-white"
+              )}
+              title="Tablet Responsive Overrides"
+            >
+              <Tablet className="w-3 h-3" />
+              <span>Tablet</span>
+            </button>
+            <button
+              onClick={() => setTargetBreakpoint("mobile")}
+              className={clsx(
+                "px-2 py-0.5 rounded text-[10px] font-medium transition-colors flex items-center gap-1",
+                targetBreakpoint === "mobile"
+                  ? "bg-cyan-500/20 text-cyan-300 font-semibold"
+                  : "text-slate-400 hover:text-white"
+              )}
+              title="Mobile Responsive Overrides"
+            >
+              <Smartphone className="w-3 h-3" />
+              <span>Mobile</span>
+            </button>
+          </div>
+        </div>
+
+        {targetBreakpoint !== "desktop" && (
+          <div className="mt-1.5 px-2 py-1 rounded bg-amber-500/10 border border-amber-500/20 text-[10px] text-amber-300 flex items-center justify-between">
+            <span>Editing {targetBreakpoint} breakpoint overrides</span>
+          </div>
+        )}
       </div>
 
       {/* Tabs */}
@@ -257,19 +351,90 @@ export function PropertyInspectorPanel() {
             {manifest?.propDescriptors && manifest.propDescriptors.length > 0 ? (
               manifest.propDescriptors.map((desc) => {
                 const val = currentProps[desc.name];
+                const isBound = isBindObject(val);
+                const isExpr = isExprObject(val);
 
                 return (
-                  <div key={desc.name} className="space-y-1">
+                  <div key={desc.name} className="space-y-1.5 p-2 rounded-xl bg-white/[0.015] border border-white/5">
+                    {/* Prop Header & Binding Toggle */}
                     <div className="flex items-center justify-between">
-                      <label className="text-slate-300 font-medium capitalize">
-                        {desc.name}
+                      <label className="text-slate-300 font-medium capitalize flex items-center gap-1">
+                        <span>{desc.name}</span>
+                        {isBound && (
+                          <span className="text-[9px] px-1 rounded bg-cyan-500/20 text-cyan-300 font-mono font-bold">
+                            $bind
+                          </span>
+                        )}
+                        {isExpr && (
+                          <span className="text-[9px] px-1 rounded bg-purple-500/20 text-purple-300 font-mono font-bold">
+                            $expr
+                          </span>
+                        )}
                       </label>
-                      {desc.type === "enum" && (
-                        <span className="text-[9px] text-slate-500 uppercase font-mono">select</span>
-                      )}
+
+                      {/* Binding Mode Switcher */}
+                      <div className="flex items-center gap-1">
+                        {!isBound && !isExpr ? (
+                          <button
+                            onClick={() =>
+                              handlePropChange(desc.name, {
+                                $bind: availableStateKeys.length > 0 ? `state.${availableStateKeys[0]}` : "state.",
+                              })
+                            }
+                            className="p-1 rounded text-slate-500 hover:text-cyan-400 hover:bg-white/5 transition-colors"
+                            title="Bind to reactive document state ($bind)"
+                          >
+                            <Link2 className="w-3 h-3" />
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handlePropChange(desc.name, "")}
+                            className="p-1 rounded text-cyan-400 hover:text-rose-400 hover:bg-white/5 transition-colors"
+                            title="Reset to literal value"
+                          >
+                            <RotateCcw className="w-3 h-3" />
+                          </button>
+                        )}
+                      </div>
                     </div>
 
-                    {desc.type === "enum" && desc.values ? (
+                    {/* DYNAMIC BINDING INPUT */}
+                    {isBound ? (
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-1">
+                          <select
+                            value={val.$bind}
+                            onChange={(e) => handlePropChange(desc.name, { $bind: e.target.value })}
+                            className="flex-1 px-2 py-1.5 rounded-lg bg-black/50 border border-cyan-500/30 text-cyan-300 font-mono text-xs focus:outline-none"
+                          >
+                            {availableStateKeys.map((k) => (
+                              <option key={k} value={`state.${k}`}>
+                                state.{k}
+                              </option>
+                            ))}
+                            <option value={val.$bind}>(Custom Path)</option>
+                          </select>
+                        </div>
+                        <input
+                          type="text"
+                          value={val.$bind}
+                          placeholder="e.g. state.totalRevenue"
+                          onChange={(e) => handlePropChange(desc.name, { $bind: e.target.value })}
+                          className="w-full px-2 py-1 rounded bg-black/40 border border-white/10 text-cyan-300 font-mono text-[11px]"
+                        />
+                      </div>
+                    ) : isExpr ? (
+                      <div className="space-y-1">
+                        <input
+                          type="text"
+                          value={val.$expr}
+                          placeholder="e.g. !state.isAgreed"
+                          onChange={(e) => handlePropChange(desc.name, { $expr: e.target.value })}
+                          className="w-full px-2 py-1.5 rounded-lg bg-black/50 border border-purple-500/30 text-purple-300 font-mono text-xs"
+                        />
+                      </div>
+                    ) : /* LITERAL INPUTS */
+                    desc.type === "enum" && desc.values ? (
                       <select
                         value={String(val ?? "")}
                         onChange={(e) => handlePropChange(desc.name, e.target.value)}
