@@ -19,12 +19,16 @@ import {
   Redo2,
   ArrowRight,
   Terminal,
+  Palette,
+  ShieldCheck,
+  FileText,
+  Globe,
 } from "lucide-react";
 import clsx from "clsx";
 
 interface CommandItem {
   id: string;
-  category: "Component" | "Template" | "Viewport" | "Tool";
+  category: "Component" | "Template" | "Page" | "Viewport" | "Tool";
   title: string;
   subtitle: string;
   icon: React.ReactNode;
@@ -54,6 +58,11 @@ export function CommandPaletteModal({ onOpenExportModal, onOpenStateModal }: Com
     redo,
     canUndo,
     canRedo,
+    pages,
+    switchPage,
+    setIsThemeModalOpen,
+    setIsActionSimulatorOpen,
+    setIsHealthDrawerOpen,
   } = useBuilderStore();
 
   const [search, setSearch] = useState("");
@@ -75,7 +84,22 @@ export function CommandPaletteModal({ onOpenExportModal, onOpenStateModal }: Com
   // Build command list
   const allCommands: CommandItem[] = [];
 
-  // 1. All Widgets / Components
+  // 1. Screens / Pages
+  for (const page of pages) {
+    allCommands.push({
+      id: `page-${page.id}`,
+      category: "Page",
+      title: `Switch to Screen: ${page.name}`,
+      subtitle: `Navigate to route ${page.route}`,
+      icon: <Globe className="w-4 h-4 text-cyan-400" />,
+      action: () => {
+        switchPage(page.id);
+        setIsCommandPaletteOpen(false);
+      },
+    });
+  }
+
+  // 2. All Widgets / Components
   const widgets = defaultRegistry.list();
   for (const w of widgets) {
     allCommands.push({
@@ -91,7 +115,7 @@ export function CommandPaletteModal({ onOpenExportModal, onOpenStateModal }: Com
     });
   }
 
-  // 2. Templates
+  // 3. Templates
   for (const tpl of TEMPLATES) {
     allCommands.push({
       id: `template-${tpl.id}`,
@@ -106,7 +130,7 @@ export function CommandPaletteModal({ onOpenExportModal, onOpenStateModal }: Com
     });
   }
 
-  // 3. Viewports
+  // 4. Viewports
   allCommands.push(
     {
       id: "vp-desktop",
@@ -143,14 +167,47 @@ export function CommandPaletteModal({ onOpenExportModal, onOpenStateModal }: Com
     }
   );
 
-  // 4. Tools & Actions
+  // 5. Tools & Actions
   allCommands.push(
+    {
+      id: "tool-theme-studio",
+      category: "Tool",
+      title: "Open Theme & Design Token Studio",
+      subtitle: "Customize brand accent color, border radius presets, and typography",
+      icon: <Palette className="w-4 h-4 text-cyan-400" />,
+      action: () => {
+        setIsCommandPaletteOpen(false);
+        setIsThemeModalOpen(true);
+      },
+    },
+    {
+      id: "tool-action-console",
+      category: "Tool",
+      title: "Open Interactive Action Console",
+      subtitle: "Inspect intercepted API dispatches, mutations, and latency simulation",
+      icon: <Terminal className="w-4 h-4 text-emerald-400" />,
+      action: () => {
+        setIsCommandPaletteOpen(false);
+        setIsActionSimulatorOpen(true);
+      },
+    },
+    {
+      id: "tool-health-audit",
+      category: "Tool",
+      title: "Inspect Document Health & Auto-Fix",
+      subtitle: "View schema audit, accessibility compliance, and run 1-click auto-fix",
+      icon: <ShieldCheck className="w-4 h-4 text-emerald-400" />,
+      action: () => {
+        setIsCommandPaletteOpen(false);
+        setIsHealthDrawerOpen(true);
+      },
+    },
     {
       id: "tool-state-data",
       category: "Tool",
       title: "Open State & DataSources Manager",
       subtitle: "Configure reactive state variables, mock datasets, and API endpoints",
-      icon: <Database className="w-4 h-4 text-emerald-400" />,
+      icon: <Database className="w-4 h-4 text-cyan-400" />,
       action: () => {
         setIsCommandPaletteOpen(false);
         onOpenStateModal();
@@ -170,7 +227,7 @@ export function CommandPaletteModal({ onOpenExportModal, onOpenStateModal }: Com
     {
       id: "tool-theme",
       category: "Tool",
-      title: `Toggle Theme Mode (Current: ${themeMode})`,
+      title: `Toggle Dark / Light Theme (Current: ${themeMode})`,
       subtitle: "Switch between Meridian Dark and Light theme presets",
       icon: themeMode === "dark" ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-400" />,
       action: () => {
@@ -280,7 +337,7 @@ export function CommandPaletteModal({ onOpenExportModal, onOpenStateModal }: Com
               setSearch(e.target.value);
               setSelectedIndex(0);
             }}
-            placeholder="Type a command, component, or template... (Esc to close)"
+            placeholder="Type a command, screen name, component, or tool... (Esc to close)"
             className="w-full bg-transparent border-none text-white text-sm placeholder:text-slate-500 focus:outline-none"
           />
           <div className="flex items-center gap-1 shrink-0">
@@ -296,7 +353,7 @@ export function CommandPaletteModal({ onOpenExportModal, onOpenStateModal }: Com
             <div className="py-12 text-center text-slate-500">
               <Terminal className="w-8 h-8 mx-auto text-slate-600 mb-2" />
               <p className="text-xs font-medium text-slate-400">No matching commands found</p>
-              <p className="text-[11px] text-slate-600 mt-0.5">Try searching for Button, Table, EMR, or Export</p>
+              <p className="text-[11px] text-slate-600 mt-0.5">Try searching for Theme, Console, Screen, Button, or EMR</p>
             </div>
           ) : (
             filtered.map((cmd, idx) => {
@@ -330,6 +387,8 @@ export function CommandPaletteModal({ onOpenExportModal, onOpenStateModal }: Com
                             "px-1.5 py-0.2 rounded text-[9px] font-mono uppercase tracking-wider",
                             cmd.category === "Component"
                               ? "bg-cyan-500/10 text-cyan-400 border border-cyan-500/20"
+                              : cmd.category === "Page"
+                              ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
                               : cmd.category === "Template"
                               ? "bg-purple-500/10 text-purple-400 border border-purple-500/20"
                               : cmd.category === "Viewport"

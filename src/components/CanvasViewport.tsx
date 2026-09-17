@@ -2,8 +2,22 @@ import React, { useRef, useState } from "react";
 import { UIDocumentRenderer, meridianDarkTheme, meridianLightTheme } from "uidl-runtime";
 import { useBuilderStore } from "../core/builderStore";
 import { findNodeAncestors } from "../core/documentOps";
+import { buildCustomizedTheme, generateCanvasStyleVars } from "../core/themeTokens";
 import { SelectionOverlay } from "./SelectionOverlay";
-import { Monitor, Tablet, Smartphone, ZoomIn, ZoomOut, Grid, Eye, Plus, ChevronRight } from "lucide-react";
+import { PageTabBar } from "./PageTabBar";
+import { ActionSimulatorDrawer } from "./ActionSimulatorDrawer";
+import {
+  Monitor,
+  Tablet,
+  Smartphone,
+  ZoomIn,
+  ZoomOut,
+  Grid,
+  Eye,
+  Plus,
+  ChevronRight,
+  Terminal,
+} from "lucide-react";
 import clsx from "clsx";
 
 export function CanvasViewport() {
@@ -11,10 +25,18 @@ export function CanvasViewport() {
     document,
     viewport,
     themeMode,
+    themeConfig,
     canvasZoom,
     showGrid,
     previewMode,
     selectedNodeId,
+    pages,
+    switchPage,
+    logAction,
+    mockLatencyMs,
+    mockHttpStatus,
+    isActionSimulatorOpen,
+    setIsActionSimulatorOpen,
     setViewport,
     setCanvasZoom,
     setShowGrid,
@@ -28,6 +50,11 @@ export function CanvasViewport() {
 
   // Breadcrumb ancestors hierarchy
   const ancestors = !previewMode && selectedNodeId ? findNodeAncestors(document.root, selectedNodeId) : null;
+
+  // Customized theme & dynamic styles
+  const baseTheme = themeMode === "dark" ? meridianDarkTheme : meridianLightTheme;
+  const activeTheme = buildCustomizedTheme(baseTheme, themeConfig);
+  const canvasStyleVars = generateCanvasStyleVars(themeMode, themeConfig);
 
   // Click-to-select in canvas
   const handleCanvasClick = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -71,6 +98,48 @@ export function CanvasViewport() {
     addNode(targetId || selectedNodeId, widgetType);
   };
 
+  // Route navigation interceptor in Preview mode
+  const handleRouteChange = (route: string | Record<string, unknown>) => {
+    const routeStr =
+      typeof route === "object" && route !== null
+        ? (route.route as string) || (route.path as string) || "/"
+        : String(route || "/");
+
+    logAction({
+      type: "navigate",
+      summary: `Navigate to route: ${routeStr}`,
+      payload: typeof route === "object" && route !== null ? route : { route: routeStr },
+      status: "success",
+    });
+
+    const normalized = routeStr.startsWith("/") ? routeStr : `/${routeStr}`;
+    const matchingPage = pages.find((p) => p.route === normalized || p.route === routeStr);
+    if (matchingPage) {
+      switchPage(matchingPage.id);
+    }
+  };
+
+  // Mutation interceptor for Mock API
+  const handleMutation = async (mutation: any) => {
+    if (mockLatencyMs > 0) {
+      await new Promise((r) => setTimeout(r, mockLatencyMs));
+    }
+    const isSuccess = mockHttpStatus === 200;
+    const responsePayload = isSuccess
+      ? { success: true, id: `mock_${Date.now()}` }
+      : { success: false, error: `Simulated Error HTTP ${mockHttpStatus}` };
+
+    logAction({
+      type: "mutate",
+      summary: `Mutate ${mutation.collection || "records"}.${mutation.operation || "update"}`,
+      payload: mutation,
+      response: responsePayload,
+      status: isSuccess ? "success" : "error",
+      latencyMs: mockLatencyMs,
+    });
+    return responsePayload;
+  };
+
   const getViewportWidthClass = () => {
     switch (viewport) {
       case "mobile":
@@ -85,6 +154,9 @@ export function CanvasViewport() {
 
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden bg-[#0d1117] select-none relative">
+      {/* Multi-Page Tab Bar */}
+      <PageTabBar />
+
       {/* Canvas Controls Bar */}
       <div className="h-10 px-4 border-b border-white/10 bg-[#161b22] flex items-center justify-between shrink-0 text-xs">
         {/* Viewport device switcher */}
@@ -137,8 +209,23 @@ export function CanvasViewport() {
           </div>
         )}
 
-        {/* Right side: Zoom & Preview Mode */}
+        {/* Right side: Action Console, Zoom & Preview Mode */}
         <div className="flex items-center gap-3">
+          {/* Action Simulator Console Toggle */}
+          <button
+            onClick={() => setIsActionSimulatorOpen(!isActionSimulatorOpen)}
+            className={clsx(
+              "flex items-center gap-1.5 px-2.5 py-1 rounded-lg border font-medium transition-all text-xs",
+              isActionSimulatorOpen
+                ? "bg-cyan-500/20 border-cyan-500/30 text-cyan-300 font-semibold"
+                : "border-white/10 text-slate-400 hover:text-white hover:bg-white/5"
+            )}
+            title="Toggle Interactive Action Simulator & Event Console"
+          >
+            <Terminal className="w-3.5 h-3.5 text-cyan-400" />
+            <span className="hidden sm:inline">Console</span>
+          </button>
+
           <div className="flex items-center gap-1 bg-black/30 px-2 py-0.5 rounded-lg border border-white/5 text-slate-400">
             <button
               onClick={() => setCanvasZoom(canvasZoom - 10)}
@@ -201,6 +288,7 @@ export function CanvasViewport() {
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
           style={{
+            ...canvasStyleVars,
             transform: `scale(${canvasZoom / 100})`,
             transformOrigin: "top center",
           }}
@@ -235,7 +323,9 @@ export function CanvasViewport() {
           <div className="min-h-full">
             <UIDocumentRenderer
               document={document}
-              theme={themeMode === "dark" ? meridianDarkTheme : meridianLightTheme}
+              theme={activeTheme}
+              onRouteChange={handleRouteChange}
+              mutationHandler={handleMutation}
             />
           </div>
         </div>
@@ -243,7 +333,7 @@ export function CanvasViewport() {
 
       {/* Floating Canvas Breadcrumb Hierarchy */}
       {!previewMode && ancestors && ancestors.length > 0 && (
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 bg-[#161b22]/95 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-white/15 shadow-2xl flex items-center gap-1 text-xs text-slate-300 font-mono max-w-[90vw] overflow-x-auto">
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 bg-[#161b22]/95 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-white/15 shadow-2xl flex items-center gap-1 text-xs text-slate-300 font-mono max-w-[90vw] overflow-x-auto">
           {ancestors.map((node, index) => {
             const isSelected = node.id === selectedNodeId;
             return (
@@ -269,6 +359,9 @@ export function CanvasViewport() {
           })}
         </div>
       )}
+
+      {/* Bottom Action Simulator Console Drawer */}
+      <ActionSimulatorDrawer />
     </div>
   );
 }

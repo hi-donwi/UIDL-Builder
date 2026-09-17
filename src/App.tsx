@@ -9,6 +9,8 @@ import { CodeMirrorEditor } from "./components/CodeMirrorEditor";
 import { ImportExportModal } from "./components/ImportExportModal";
 import { StateDataModal } from "./components/StateDataModal";
 import { CommandPaletteModal } from "./components/CommandPaletteModal";
+import { ThemeCustomizerModal } from "./components/ThemeCustomizerModal";
+import { DocumentHealthDrawer } from "./components/DocumentHealthDrawer";
 import {
   Boxes,
   Layers,
@@ -26,6 +28,7 @@ import {
   ChevronRight,
   Database,
   Search,
+  Palette,
 } from "lucide-react";
 import clsx from "clsx";
 
@@ -40,6 +43,10 @@ export default function App() {
     selectedNodeId,
     isCommandPaletteOpen,
     setIsCommandPaletteOpen,
+    isThemeModalOpen,
+    setIsThemeModalOpen,
+    isHealthDrawerOpen,
+    setIsHealthDrawerOpen,
     undo,
     redo,
     duplicateNode,
@@ -196,36 +203,42 @@ export default function App() {
             </kbd>
           </button>
 
-          {/* Validation badge */}
-          <div
+          {/* Validation badge with Health Drawer trigger */}
+          <button
+            onClick={() => setIsHealthDrawerOpen(true)}
             className={clsx(
-              "flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-mono border transition-all",
+              "flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-mono border transition-all cursor-pointer hover:scale-105 active:scale-95",
               validationErrors.length === 0
-                ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                : "bg-rose-500/10 text-rose-400 border-rose-500/20"
+                ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20"
+                : "bg-rose-500/10 text-rose-400 border-rose-500/20 hover:bg-rose-500/20 animate-pulse"
             )}
-            title={
-              validationErrors.length === 0
-                ? "Document matches UIDL schema specification"
-                : `${validationErrors.length} validation errors found`
-            }
+            title="Inspect document health, accessibility issues, and run 1-click auto-fix"
           >
             {validationErrors.length === 0 ? (
               <>
                 <CheckCircle2 className="w-3 h-3 text-emerald-400" />
-                <span className="hidden sm:inline">Schema Valid</span>
+                <span className="hidden sm:inline">Health: 100%</span>
               </>
             ) : (
               <>
                 <AlertCircle className="w-3 h-3 text-rose-400" />
-                <span>{validationErrors.length} Errors</span>
+                <span>{validationErrors.length} Issues</span>
               </>
             )}
-          </div>
+          </button>
         </div>
 
-        {/* Right: State & Data, Theme, Import/Export, GitHub */}
+        {/* Right: Theme Studio, State & Data, Mode Toggle, Export, GitHub */}
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => setIsThemeModalOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/10 bg-white/[0.03] hover:bg-white/[0.08] text-slate-300 hover:text-white font-medium text-xs transition-colors"
+            title="Open Visual Theme & Design Token Studio"
+          >
+            <Palette className="w-3.5 h-3.5 text-cyan-400" />
+            <span className="hidden md:inline">Theme Studio</span>
+          </button>
+
           <button
             onClick={() => setIsStateModalOpen(true)}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/10 bg-white/[0.03] hover:bg-white/[0.08] text-slate-300 hover:text-white font-medium text-xs transition-colors"
@@ -414,6 +427,13 @@ export default function App() {
         onOpenExportModal={openExportModal}
         onOpenStateModal={() => setIsStateModalOpen(true)}
       />
+
+      <ThemeCustomizerModal
+        isOpen={isThemeModalOpen}
+        onClose={() => setIsThemeModalOpen(false)}
+      />
+
+      <DocumentHealthDrawer />
     </div>
   );
 }
