@@ -192,3 +192,34 @@ export function buildFlatNodeList(node: UIDLNode, depth = 0): Array<{ node: UIDL
   }
   return list;
 }
+
+export function insertSlotChild(root: UIDLNode, parentId: string, slotName: string, newNode: UIDLNode): UIDLNode {
+  const rootClone: UIDLNode = JSON.parse(JSON.stringify(root));
+  const targetParent = findNodeById(rootClone, parentId);
+
+  if (!targetParent) return rootClone;
+
+  if (!targetParent.slots) {
+    targetParent.slots = {};
+  }
+
+  if (!targetParent.slots[slotName]) {
+    targetParent.slots[slotName] = [];
+  }
+
+  targetParent.slots[slotName].push(newNode);
+  return rootClone;
+}
+
+export function removeSlotChild(root: UIDLNode, parentId: string, slotName: string, childId: string): UIDLNode {
+  const rootClone: UIDLNode = JSON.parse(JSON.stringify(root));
+  const targetParent = findNodeById(rootClone, parentId);
+
+  if (!targetParent || !targetParent.slots || !targetParent.slots[slotName]) {
+    return rootClone;
+  }
+
+  targetParent.slots[slotName] = targetParent.slots[slotName].filter((n) => n.id !== childId);
+  return rootClone;
+}
+

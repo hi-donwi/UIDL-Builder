@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useBuilderStore } from "./core/builderStore";
 import { CanvasViewport } from "./components/CanvasViewport";
 import { WidgetPalettePanel } from "./components/WidgetPalettePanel";
@@ -7,6 +7,7 @@ import { TemplateGalleryPanel } from "./components/TemplateGalleryPanel";
 import { PropertyInspectorPanel } from "./components/PropertyInspectorPanel";
 import { CodeMirrorEditor } from "./components/CodeMirrorEditor";
 import { ImportExportModal } from "./components/ImportExportModal";
+import { StateDataModal } from "./components/StateDataModal";
 import {
   Boxes,
   Layers,
@@ -22,6 +23,7 @@ import {
   Sliders,
   ChevronLeft,
   ChevronRight,
+  Database,
 } from "lucide-react";
 import clsx from "clsx";
 
@@ -36,14 +38,75 @@ export default function App() {
     selectedNodeId,
     undo,
     redo,
+    duplicateNode,
+    deleteNode,
+    selectNode,
     setThemeMode,
     setActiveSidebarTab,
   } = useBuilderStore();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalDefaultTab, setModalDefaultTab] = useState<"export" | "import">("export");
+  const [isStateModalOpen, setIsStateModalOpen] = useState(false);
+  const [modalDefaultTab, setModalDefaultTab] = useState<"export" | "snippet" | "import">("export");
   const [leftSidebarCollapsed, setLeftSidebarCollapsed] = useState(false);
   const [rightSidebarCollapsed, setRightSidebarCollapsed] = useState(false);
+
+  // Global Canvas Keyboard Shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      const isEditing =
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.isContentEditable ||
+        target.tagName === "SELECT";
+
+      const isMac = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
+      const isCmdOrCtrl = isMac ? e.metaKey : e.ctrlKey;
+
+      // Undo: Ctrl+Z (without Shift)
+      if (isCmdOrCtrl && e.key.toLowerCase() === "z" && !e.shiftKey) {
+        if (!isEditing && canUndo) {
+          e.preventDefault();
+          undo();
+        }
+      }
+      // Redo: Ctrl+Y or Ctrl+Shift+Z
+      else if (
+        (isCmdOrCtrl && e.key.toLowerCase() === "y") ||
+        (isCmdOrCtrl && e.shiftKey && e.key.toLowerCase() === "z")
+      ) {
+        if (!isEditing && canRedo) {
+          e.preventDefault();
+          redo();
+        }
+      }
+      // Duplicate: Ctrl+D
+      else if (isCmdOrCtrl && e.key.toLowerCase() === "d") {
+        if (!isEditing && selectedNodeId) {
+          e.preventDefault();
+          duplicateNode(selectedNodeId);
+        }
+      }
+      // Delete: Delete or Backspace
+      else if (e.key === "Delete" || (e.key === "Backspace" && !isEditing)) {
+        if (!isEditing && selectedNodeId && selectedNodeId !== document.root.id) {
+          e.preventDefault();
+          deleteNode(selectedNodeId);
+        }
+      }
+      // Deselect: Escape
+      else if (e.key === "Escape") {
+        if (!isEditing) {
+          e.preventDefault();
+          selectNode(null);
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [canUndo, canRedo, selectedNodeId, document.root.id, undo, redo, duplicateNode, deleteNode, selectNode]);
 
   const openExportModal = () => {
     setModalDefaultTab("export");
@@ -102,16 +165,52 @@ export default function App() {
             <button
               onClick={redo}
               disabled={!canRedo}
-              title="Redo (Ctrl+Y)"
+              title="Redo (Ctrl+Y or Cmd+Shift+Z)"
               className="p-1.5 rounded hover:bg-white/10 text-slate-400 hover:text-white disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
             >
               <Redo2 className="w-3.5 h-3.5" />
             </button>
           </div>
+
+          {/* Validation badge */}
+          <div
+            className={clsx(
+              "flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-mono border transition-all",
+              validationErrors.length === 0
+                ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                : "bg-rose-500/10 text-rose-400 border-rose-500/20"
+            )}
+            title={
+              validationErrors.length === 0
+                ? "Document matches UIDL schema specification"
+                : `${validationErrors.length} validation errors found`
+            }
+          >
+            {validationErrors.length === 0 ? (
+              <>
+                <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                <span className="hidden sm:inline">Schema Valid</span>
+              </>
+            ) : (
+              <>
+                <AlertCircle className="w-3 h-3 text-rose-400" />
+                <span>{validationErrors.length} Errors</span>
+              </>
+            )}
+          </div>
         </div>
 
-        {/* Right: Theme, Import/Export, GitHub */}
-        <div className="flex items-center gap-2.5">
+        {/* Right: State & Data, Theme, Import/Export, GitHub */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setIsStateModalOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/10 bg-white/[0.03] hover:bg-white/[0.08] text-slate-300 hover:text-white font-medium text-xs transition-colors"
+            title="Manage reactive state variables and datasets"
+          >
+            <Database className="w-3.5 h-3.5 text-cyan-400" />
+            <span className="hidden md:inline">State & Data</span>
+          </button>
+
           <button
             onClick={() => setThemeMode(themeMode === "dark" ? "light" : "dark")}
             className="p-2 rounded-lg border border-white/10 hover:bg-white/5 text-slate-300 transition-colors"
@@ -215,16 +314,24 @@ export default function App() {
                   ? "border-cyan-400 text-cyan-300 bg-white/[0.03]"
                   : "border-transparent text-slate-400 hover:text-white"
               )}
-              title="Raw JSON Schema"
+              title="Raw JSON Document Editor"
             >
               <Code2 className="w-3.5 h-3.5" />
               {!leftSidebarCollapsed && <span>JSON</span>}
             </button>
+
+            <button
+              onClick={() => setLeftSidebarCollapsed(!leftSidebarCollapsed)}
+              className="px-2 py-2.5 text-slate-400 hover:text-white border-l border-white/5 transition-colors"
+              title={leftSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            >
+              {leftSidebarCollapsed ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronLeft className="w-3.5 h-3.5" />}
+            </button>
           </div>
 
-          {/* Left Panel Content */}
+          {/* Left Panel Active Body */}
           {!leftSidebarCollapsed && (
-            <div className="flex-1 overflow-hidden flex flex-col">
+            <div className="flex-1 flex flex-col overflow-hidden">
               {activeSidebarTab === "palette" && <WidgetPalettePanel />}
               {activeSidebarTab === "layers" && <LayerTreePanel />}
               {activeSidebarTab === "templates" && <TemplateGalleryPanel />}
@@ -233,57 +340,50 @@ export default function App() {
           )}
         </aside>
 
-        {/* Center: Canvas Viewport */}
-        <main className="flex-1 flex flex-col overflow-hidden relative">
+        {/* Center: Live Interactive Viewport */}
+        <main className="flex-1 flex flex-col overflow-hidden bg-[#0d1117] relative">
           <CanvasViewport />
         </main>
 
-        {/* Right Sidebar: Inspector */}
+        {/* Right Sidebar: Property Inspector */}
         <aside
           className={clsx(
             "border-l border-white/10 bg-[#161b22] flex flex-col shrink-0 z-20 transition-all duration-200 overflow-hidden",
-            rightSidebarCollapsed ? "w-0 border-l-0" : "w-80"
+            rightSidebarCollapsed ? "w-10" : "w-84"
           )}
         >
-          <PropertyInspectorPanel />
+          {/* Header */}
+          <div className="h-10 px-3 border-b border-white/10 flex items-center justify-between shrink-0 bg-black/30 text-xs">
+            {!rightSidebarCollapsed && (
+              <div className="flex items-center gap-2 font-semibold text-slate-300">
+                <Sliders className="w-3.5 h-3.5 text-cyan-400" />
+                <span>Inspector</span>
+              </div>
+            )}
+            <button
+              onClick={() => setRightSidebarCollapsed(!rightSidebarCollapsed)}
+              className="p-1 text-slate-400 hover:text-white transition-colors ml-auto"
+              title={rightSidebarCollapsed ? "Expand inspector" : "Collapse inspector"}
+            >
+              {rightSidebarCollapsed ? <ChevronLeft className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+            </button>
+          </div>
+
+          {/* Inspector Body */}
+          {!rightSidebarCollapsed && <PropertyInspectorPanel />}
         </aside>
       </div>
 
-      {/* Bottom Status Bar */}
-      <footer className="h-7 px-4 border-t border-white/10 bg-[#0d1117] flex items-center justify-between text-xs text-slate-400 shrink-0 select-none z-30 font-mono">
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-1.5">
-            {validationErrors.length === 0 ? (
-              <>
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                <span className="text-emerald-400 font-medium">Valid UIDL Schema</span>
-              </>
-            ) : (
-              <>
-                <AlertCircle className="w-3.5 h-3.5 text-amber-400" />
-                <span className="text-amber-400 font-medium">
-                  {validationErrors.length} validation warning(s)
-                </span>
-              </>
-            )}
-          </div>
-
-          <span className="text-slate-600">|</span>
-
-          <span>Selected: {selectedNodeId ? `#${selectedNodeId}` : "(none)"}</span>
-        </div>
-
-        <div className="flex items-center gap-4 text-slate-500">
-          <span>Engine: UIDL-Runtime v0.1.4</span>
-          <span>Theme: Meridian</span>
-        </div>
-      </footer>
-
-      {/* Export / Import Modal */}
+      {/* Modals */}
       <ImportExportModal
         isOpen={isModalOpen}
-        defaultTab={modalDefaultTab}
         onClose={() => setIsModalOpen(false)}
+        defaultTab={modalDefaultTab}
+      />
+
+      <StateDataModal
+        isOpen={isStateModalOpen}
+        onClose={() => setIsStateModalOpen(false)}
       />
     </div>
   );

@@ -28,9 +28,18 @@ type ActionType = "showSnackbar" | "showDialog" | "setState" | "navigate" | "api
 const COMMON_EVENTS = ["onClick", "onChange", "onSubmit", "onSelect", "onRowClick", "onBlur"];
 
 export function PropertyInspectorPanel() {
-  const { document, selectedNodeId, updateNodeProps, updateNodeEvents, updateNodeStyle } = useBuilderStore();
+  const {
+    document,
+    selectedNodeId,
+    updateNodeProps,
+    updateNodeEvents,
+    updateNodeStyle,
+    insertNodeIntoSlot,
+    removeNodeFromSlot,
+  } = useBuilderStore();
   const [activeTab, setActiveTab] = useState<TabMode>("props");
   const [newEventTrigger, setNewEventTrigger] = useState("onClick");
+  const [selectedSlotWidgetType, setSelectedSlotWidgetType] = useState<Record<string, string>>({});
 
   if (!selectedNodeId) {
     return (
@@ -309,6 +318,111 @@ export function PropertyInspectorPanel() {
             ) : (
               <p className="text-[11px] text-slate-500 italic">No customizable properties exposed.</p>
             )}
+
+            {/* Named Slots Section */}
+            {(() => {
+              const availableSlots = Array.from(
+                new Set([
+                  ...(manifest?.slots || []),
+                  ...(selectedNode.slots ? Object.keys(selectedNode.slots) : []),
+                ])
+              );
+
+              if (availableSlots.length === 0) return null;
+
+              return (
+                <div className="pt-4 border-t border-white/10 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider flex items-center gap-1.5">
+                      <Layers className="w-3.5 h-3.5 text-cyan-400" />
+                      <span>Named Component Slots</span>
+                    </span>
+                  </div>
+
+                  <div className="space-y-3">
+                    {availableSlots.map((slotName) => {
+                      const slotNodes = (selectedNode.slots && selectedNode.slots[slotName]) || [];
+                      const selectedType = selectedSlotWidgetType[slotName] || "Text";
+
+                      return (
+                        <div
+                          key={slotName}
+                          className="p-3 rounded-xl border border-white/10 bg-white/[0.02] space-y-2.5"
+                        >
+                          <div className="flex items-center justify-between border-b border-white/5 pb-1.5">
+                            <span className="font-mono text-cyan-300 font-semibold text-xs">
+                              {slotName}
+                            </span>
+                            <span className="text-[10px] text-slate-500 font-mono">
+                              {slotNodes.length} items
+                            </span>
+                          </div>
+
+                          {/* List of nodes currently in this slot */}
+                          <div className="space-y-1">
+                            {slotNodes.length === 0 ? (
+                              <p className="text-[10px] text-slate-500 italic py-1">Slot is empty</p>
+                            ) : (
+                              slotNodes.map((child) => (
+                                <div
+                                  key={child.id}
+                                  className="flex items-center justify-between p-1.5 rounded-lg bg-black/40 border border-white/5 text-[11px]"
+                                >
+                                  <div className="flex items-center gap-1.5 truncate">
+                                    <span className="font-medium text-white">{child.type}</span>
+                                    <span className="text-[10px] text-slate-500 font-mono">
+                                      #{child.id}
+                                    </span>
+                                  </div>
+
+                                  <button
+                                    onClick={() => removeNodeFromSlot(selectedNode.id, slotName, child.id)}
+                                    title="Remove from slot"
+                                    className="p-1 hover:text-rose-400 text-slate-500 transition-colors"
+                                  >
+                                    <Trash2 className="w-3 h-3" />
+                                  </button>
+                                </div>
+                              ))
+                            )}
+                          </div>
+
+                          {/* Add widget to slot */}
+                          <div className="flex items-center gap-1.5 pt-1">
+                            <select
+                              value={selectedType}
+                              onChange={(e) =>
+                                setSelectedSlotWidgetType({
+                                  ...selectedSlotWidgetType,
+                                  [slotName]: e.target.value,
+                                })
+                              }
+                              className="flex-1 px-2 py-1 rounded-lg bg-black/50 border border-white/10 text-white text-[11px]"
+                            >
+                              <option value="Text">Text</option>
+                              <option value="Button">Button</option>
+                              <option value="Badge">Badge</option>
+                              <option value="Icon">Icon</option>
+                              <option value="TextField">TextField</option>
+                              <option value="Select">Select</option>
+                              <option value="Container">Container</option>
+                            </select>
+
+                            <button
+                              onClick={() => insertNodeIntoSlot(selectedNode.id, slotName, selectedType)}
+                              className="px-2.5 py-1 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/40 text-cyan-300 font-semibold text-[11px] flex items-center gap-1 transition-all"
+                            >
+                              <Plus className="w-3 h-3" />
+                              <span>Add</span>
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         )}
 

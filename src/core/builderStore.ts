@@ -9,6 +9,8 @@ import {
   patchNodeEvents,
   patchNodeStyle,
   moveNode,
+  insertSlotChild,
+  removeSlotChild,
   generateNodeId,
 } from "./documentOps";
 import { getWidgetDefaultProps } from "../lib/uidlBridge";
@@ -52,6 +54,11 @@ export interface BuilderState {
   updateNodeEvents: (nodeId: string, events: Record<string, unknown>) => void;
   updateNodeStyle: (nodeId: string, style: Record<string, unknown>) => void;
   moveNode: (sourceId: string, targetParentId: string, targetIndex?: number) => void;
+  insertNodeIntoSlot: (parentId: string, slotName: string, type: string) => void;
+  removeNodeFromSlot: (parentId: string, slotName: string, childId: string) => void;
+  updateDocumentState: (newState: Record<string, unknown>) => void;
+  updateDataSources: (newDataSources: Record<string, unknown>) => void;
+  updateDocumentMeta: (meta: { name?: string; id?: string }) => void;
   setDocument: (document: UIDLDocument) => void;
   loadTemplate: (templateId: string) => void;
   
@@ -245,6 +252,124 @@ export const useBuilderStore = create<BuilderState>((set, get) => ({
     const newDoc: UIDLDocument = {
       ...document,
       root: newRoot,
+    };
+
+    const val = validateDocument(newDoc);
+
+    set({
+      document: newDoc,
+      validationErrors: val.errors,
+      history: {
+        past: [...history.past, document],
+        future: [],
+      },
+      canUndo: true,
+      canRedo: false,
+    });
+  },
+
+  insertNodeIntoSlot: (parentId, slotName, type) => {
+    const { document, history } = get();
+    const defaultProps = getWidgetDefaultProps(type);
+    const newNode: UIDLNode = {
+      id: generateNodeId(type),
+      type,
+      props: defaultProps,
+      children: [],
+    };
+
+    const newRoot = insertSlotChild(document.root, parentId, slotName, newNode);
+    const newDoc: UIDLDocument = {
+      ...document,
+      root: newRoot,
+    };
+
+    const val = validateDocument(newDoc);
+
+    set({
+      document: newDoc,
+      selectedNodeId: newNode.id,
+      validationErrors: val.errors,
+      history: {
+        past: [...history.past, document],
+        future: [],
+      },
+      canUndo: true,
+      canRedo: false,
+    });
+  },
+
+  removeNodeFromSlot: (parentId, slotName, childId) => {
+    const { document, history, selectedNodeId } = get();
+    const newRoot = removeSlotChild(document.root, parentId, slotName, childId);
+    const newDoc: UIDLDocument = {
+      ...document,
+      root: newRoot,
+    };
+
+    const val = validateDocument(newDoc);
+
+    set({
+      document: newDoc,
+      selectedNodeId: selectedNodeId === childId ? null : selectedNodeId,
+      validationErrors: val.errors,
+      history: {
+        past: [...history.past, document],
+        future: [],
+      },
+      canUndo: true,
+      canRedo: false,
+    });
+  },
+
+  updateDocumentState: (newState) => {
+    const { document, history } = get();
+    const newDoc: UIDLDocument = {
+      ...document,
+      state: newState,
+    };
+
+    const val = validateDocument(newDoc);
+
+    set({
+      document: newDoc,
+      validationErrors: val.errors,
+      history: {
+        past: [...history.past, document],
+        future: [],
+      },
+      canUndo: true,
+      canRedo: false,
+    });
+  },
+
+  updateDataSources: (newDataSources) => {
+    const { document, history } = get();
+    const newDoc: UIDLDocument = {
+      ...document,
+      dataSources: newDataSources,
+    };
+
+    const val = validateDocument(newDoc);
+
+    set({
+      document: newDoc,
+      validationErrors: val.errors,
+      history: {
+        past: [...history.past, document],
+        future: [],
+      },
+      canUndo: true,
+      canRedo: false,
+    });
+  },
+
+  updateDocumentMeta: (meta) => {
+    const { document, history } = get();
+    const newDoc: UIDLDocument = {
+      ...document,
+      name: meta.name ?? document.name,
+      id: meta.id ?? document.id,
     };
 
     const val = validateDocument(newDoc);
