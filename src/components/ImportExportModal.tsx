@@ -1,8 +1,28 @@
 import React, { useState } from "react";
 import { useBuilderStore } from "../core/builderStore";
 import { validateDocument } from "../core/schemaValidator";
-import { X, Download, Upload, Copy, Check, FileJson, Code2, AlertCircle } from "lucide-react";
+import {
+  generateReactSnippet,
+  generateFlutterSnippet,
+  generateComposeSnippet,
+  countDocumentNodes,
+} from "../core/exportGenerators";
+import {
+  X,
+  Download,
+  Upload,
+  Copy,
+  Check,
+  FileJson,
+  Code2,
+  AlertCircle,
+  Smartphone,
+  Layers,
+  Terminal,
+} from "lucide-react";
 import clsx from "clsx";
+
+export type ExportPlatform = "json" | "react" | "flutter" | "compose";
 
 interface ImportExportModalProps {
   isOpen: boolean;
@@ -11,36 +31,60 @@ interface ImportExportModalProps {
 }
 
 export function ImportExportModal({ isOpen, onClose, defaultTab = "export" }: ImportExportModalProps) {
-  const { document, setDocument } = useBuilderStore();
-  const [activeTab, setActiveTab] = useState<"export" | "snippet" | "import">(defaultTab);
+  const { document, setDocument, themeMode } = useBuilderStore();
+  const [mainTab, setMainTab] = useState<"export" | "import">(
+    defaultTab === "import" ? "import" : "export"
+  );
+  const [platform, setPlatform] = useState<ExportPlatform>(
+    defaultTab === "snippet" ? "react" : "json"
+  );
+
   const [copied, setCopied] = useState(false);
-  const [snippetCopied, setSnippetCopied] = useState(false);
   const [importText, setImportText] = useState("");
   const [importError, setImportError] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
   const jsonString = JSON.stringify(document, null, 2);
+  const totalNodes = countDocumentNodes(document.root);
+  const docSizeKb = (new Blob([jsonString]).size / 1024).toFixed(1);
 
-  const reactSnippet = `import React from "react";
-import { UIDocumentRenderer, meridianDarkTheme } from "uidl-runtime";
-import type { UIDLDocument } from "uidl-runtime";
-import "uidl-runtime/style.css";
+  const codeSnippets: Record<ExportPlatform, { code: string; ext: string; dep: string; lang: string }> = {
+    json: {
+      code: jsonString,
+      ext: "json",
+      dep: "uidl-runtime >= 0.1.4",
+      lang: "json",
+    },
+    react: {
+      code: generateReactSnippet(document, themeMode),
+      ext: "tsx",
+      dep: "npm install uidl-runtime",
+      lang: "typescript",
+    },
+    flutter: {
+      code: generateFlutterSnippet(document, themeMode),
+      ext: "dart",
+      dep: "flutter pub add uidl_runtime",
+      lang: "dart",
+    },
+    compose: {
+      code: generateComposeSnippet(document, themeMode),
+      ext: "kt",
+      dep: "implementation(\"io.uidl:runtime-compose:0.1.0\")",
+      lang: "kotlin",
+    },
+  };
 
-const documentData: UIDLDocument = ${jsonString};
-
-export default function ${document.name ? document.name.replace(/[^a-zA-Z0-9]/g, "") : "UidlView"}() {
-  return (
-    <div className="w-full min-h-screen">
-      <UIDocumentRenderer document={documentData} theme={meridianDarkTheme} />
-    </div>
-  );
-}
-`;
+  const activeSnippet = codeSnippets[platform];
 
   const handleDownload = () => {
-    const filename = `${document.id || "uidl-document"}.json`;
-    const blob = new Blob([jsonString], { type: "application/json" });
+    const baseName = (document.id || document.name || "uidl-screen")
+      .toLowerCase()
+      .replace(/[^a-z0-9_-]/g, "_");
+    const filename = `${baseName}.${activeSnippet.ext}`;
+    const mimeType = platform === "json" ? "application/json" : "text/plain";
+    const blob = new Blob([activeSnippet.code], { type: mimeType });
     const url = URL.createObjectURL(blob);
     const link = window.document.createElement("a");
     link.href = url;
@@ -52,15 +96,9 @@ export default function ${document.name ? document.name.replace(/[^a-zA-Z0-9]/g,
   };
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(jsonString);
+    navigator.clipboard.writeText(activeSnippet.code);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-  };
-
-  const handleCopySnippet = () => {
-    navigator.clipboard.writeText(reactSnippet);
-    setSnippetCopied(true);
-    setTimeout(() => setSnippetCopied(false), 2000);
   };
 
   const handleImportSubmit = () => {
@@ -94,12 +132,12 @@ export default function ${document.name ? document.name.replace(/[^a-zA-Z0-9]/g,
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in select-none">
-      <div className="w-full max-w-2xl bg-[#161b22] border border-white/10 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
-        {/* Header */}
-        <div className="px-5 py-3.5 border-b border-white/10 flex items-center justify-between shrink-0 bg-black/20">
+      <div className="w-full max-w-3xl bg-[#161b22] border border-white/10 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[88vh]">
+        {/* Modal Header */}
+        <div className="px-5 py-3.5 border-b border-white/10 flex items-center justify-between shrink-0 bg-black/30">
           <div className="flex items-center gap-2">
             <FileJson className="w-4 h-4 text-cyan-400" />
-            <span className="font-semibold text-sm text-white">Import & Export Document</span>
+            <span className="font-semibold text-sm text-white">Import & Export Multi-Platform Studio</span>
           </div>
 
           <button
@@ -110,108 +148,168 @@ export default function ${document.name ? document.name.replace(/[^a-zA-Z0-9]/g,
           </button>
         </div>
 
-        {/* Tab Navigation */}
-        <div className="flex items-center border-b border-white/10 bg-black/40 px-5 text-xs font-semibold">
-          <button
-            onClick={() => setActiveTab("export")}
-            className={clsx(
-              "py-3 px-4 border-b-2 transition-all flex items-center gap-1.5",
-              activeTab === "export"
-                ? "border-cyan-400 text-cyan-300"
-                : "border-transparent text-slate-400 hover:text-white"
-            )}
-          >
-            <Download className="w-3.5 h-3.5" />
-            <span>Export JSON</span>
-          </button>
+        {/* Top Level Mode Tabs */}
+        <div className="flex items-center justify-between border-b border-white/10 bg-black/40 px-5 text-xs font-semibold">
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setMainTab("export")}
+              className={clsx(
+                "py-3 px-4 border-b-2 transition-all flex items-center gap-1.5",
+                mainTab === "export"
+                  ? "border-cyan-400 text-cyan-300"
+                  : "border-transparent text-slate-400 hover:text-white"
+              )}
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>Multi-Platform Export</span>
+            </button>
 
-          <button
-            onClick={() => setActiveTab("snippet")}
-            className={clsx(
-              "py-3 px-4 border-b-2 transition-all flex items-center gap-1.5",
-              activeTab === "snippet"
-                ? "border-cyan-400 text-cyan-300"
-                : "border-transparent text-slate-400 hover:text-white"
-            )}
-          >
-            <Code2 className="w-3.5 h-3.5" />
-            <span>React TSX Snippet</span>
-          </button>
+            <button
+              onClick={() => setMainTab("import")}
+              className={clsx(
+                "py-3 px-4 border-b-2 transition-all flex items-center gap-1.5",
+                mainTab === "import"
+                  ? "border-cyan-400 text-cyan-300"
+                  : "border-transparent text-slate-400 hover:text-white"
+              )}
+            >
+              <Upload className="w-3.5 h-3.5" />
+              <span>Import Document</span>
+            </button>
+          </div>
 
-          <button
-            onClick={() => setActiveTab("import")}
-            className={clsx(
-              "py-3 px-4 border-b-2 transition-all flex items-center gap-1.5",
-              activeTab === "import"
-                ? "border-cyan-400 text-cyan-300"
-                : "border-transparent text-slate-400 hover:text-white"
-            )}
-          >
-            <Upload className="w-3.5 h-3.5" />
-            <span>Import JSON</span>
-          </button>
+          {/* Quick Metrics Badge */}
+          {mainTab === "export" && (
+            <div className="hidden sm:flex items-center gap-3 text-[11px] font-mono text-slate-400">
+              <span className="flex items-center gap-1">
+                <Layers className="w-3 h-3 text-cyan-400" />
+                <span>{totalNodes} Nodes</span>
+              </span>
+              <span>•</span>
+              <span>{docSizeKb} KB</span>
+              <span>•</span>
+              <span className="text-emerald-400 font-semibold">v{document.version || "1.0.0"}</span>
+            </div>
+          )}
         </div>
 
         {/* Modal Body */}
         <div className="flex-1 overflow-y-auto p-5 text-xs">
-          {activeTab === "export" && (
+          {mainTab === "export" && (
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-slate-400">
-                  Ready-to-use UIDL JSON document matching the official specification.
-                </span>
+              {/* Platform Selector Pills */}
+              <div className="flex flex-wrap items-center justify-between gap-2 p-1.5 rounded-xl bg-black/50 border border-white/5">
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => {
+                      setPlatform("json");
+                      setCopied(false);
+                    }}
+                    className={clsx(
+                      "px-3 py-1.5 rounded-lg font-medium transition-all flex items-center gap-1.5",
+                      platform === "json"
+                        ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 shadow-sm"
+                        : "text-slate-400 hover:text-white hover:bg-white/5"
+                    )}
+                  >
+                    <FileJson className="w-3.5 h-3.5" />
+                    <span>JSON Schema</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setPlatform("react");
+                      setCopied(false);
+                    }}
+                    className={clsx(
+                      "px-3 py-1.5 rounded-lg font-medium transition-all flex items-center gap-1.5",
+                      platform === "react"
+                        ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 shadow-sm"
+                        : "text-slate-400 hover:text-white hover:bg-white/5"
+                    )}
+                  >
+                    <Code2 className="w-3.5 h-3.5" />
+                    <span>React (TSX)</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setPlatform("flutter");
+                      setCopied(false);
+                    }}
+                    className={clsx(
+                      "px-3 py-1.5 rounded-lg font-medium transition-all flex items-center gap-1.5",
+                      platform === "flutter"
+                        ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 shadow-sm"
+                        : "text-slate-400 hover:text-white hover:bg-white/5"
+                    )}
+                  >
+                    <Smartphone className="w-3.5 h-3.5" />
+                    <span>Flutter (Dart)</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setPlatform("compose");
+                      setCopied(false);
+                    }}
+                    className={clsx(
+                      "px-3 py-1.5 rounded-lg font-medium transition-all flex items-center gap-1.5",
+                      platform === "compose"
+                        ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 shadow-sm"
+                        : "text-slate-400 hover:text-white hover:bg-white/5"
+                    )}
+                  >
+                    <Smartphone className="w-3.5 h-3.5" />
+                    <span>Android (Compose)</span>
+                  </button>
+                </div>
+
+                {/* Actions: Copy & Download */}
                 <div className="flex items-center gap-2">
                   <button
                     onClick={handleCopy}
                     className="px-3 py-1.5 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 text-white font-medium flex items-center gap-1.5 transition-colors"
                   >
                     {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                    <span>{copied ? "Copied" : "Copy JSON"}</span>
+                    <span>{copied ? "Copied!" : "Copy Code"}</span>
                   </button>
+
                   <button
                     onClick={handleDownload}
-                    className="px-3 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-black font-semibold flex items-center gap-1.5 transition-colors"
+                    className="px-3 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-black font-semibold flex items-center gap-1.5 transition-colors shadow-md shadow-cyan-500/20"
                   >
                     <Download className="w-3.5 h-3.5" />
-                    <span>Download .json</span>
+                    <span>Download .{activeSnippet.ext}</span>
                   </button>
                 </div>
               </div>
 
-              <textarea
-                readOnly
-                rows={14}
-                value={jsonString}
-                className="w-full p-3 rounded-xl bg-black/60 border border-white/10 text-cyan-300 font-mono text-[11px] focus:outline-none select-all"
-              />
-            </div>
-          )}
-
-          {activeTab === "snippet" && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-slate-400">
-                  Embed this UIDL document directly into your Next.js or Vite React project using <code className="text-cyan-300">uidl-runtime</code>.
+              {/* Dependency / Integration note */}
+              <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-black/30 border border-white/5 font-mono text-[11px] text-slate-400">
+                <div className="flex items-center gap-2">
+                  <Terminal className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                  <span>Integration requirement:</span>
+                  <code className="text-cyan-300 bg-white/5 px-2 py-0.5 rounded border border-white/10">
+                    {activeSnippet.dep}
+                  </code>
+                </div>
+                <span className="text-slate-500 uppercase tracking-wider text-[10px]">
+                  {activeSnippet.lang}
                 </span>
-                <button
-                  onClick={handleCopySnippet}
-                  className="px-3 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-black font-semibold flex items-center gap-1.5 transition-colors"
-                >
-                  {snippetCopied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                  <span>{snippetCopied ? "Copied" : "Copy React Code"}</span>
-                </button>
               </div>
 
+              {/* Code preview area */}
               <textarea
                 readOnly
-                rows={14}
-                value={reactSnippet}
-                className="w-full p-3 rounded-xl bg-black/60 border border-white/10 text-cyan-300 font-mono text-[11px] focus:outline-none select-all"
+                rows={15}
+                value={activeSnippet.code}
+                className="w-full p-4 rounded-xl bg-black/70 border border-white/10 text-cyan-300 font-mono text-[11px] leading-relaxed focus:outline-none select-all focus:border-cyan-500/50 transition-colors"
               />
             </div>
           )}
 
-          {activeTab === "import" && (
+          {mainTab === "import" && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <span className="text-slate-400">
@@ -235,14 +333,14 @@ export default function ${document.name ? document.name.replace(/[^a-zA-Z0-9]/g,
               )}
 
               <textarea
-                rows={12}
+                rows={14}
                 placeholder="Paste UIDL JSON here..."
                 value={importText}
                 onChange={(e) => {
                   setImportText(e.target.value);
                   setImportError(null);
                 }}
-                className="w-full p-3 rounded-xl bg-black/60 border border-white/10 text-cyan-300 font-mono text-[11px] focus:outline-none focus:border-cyan-500"
+                className="w-full p-4 rounded-xl bg-black/60 border border-white/10 text-cyan-300 font-mono text-[11px] focus:outline-none focus:border-cyan-500"
               />
 
               <div className="flex justify-end gap-2 pt-2">

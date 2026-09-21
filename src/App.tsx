@@ -11,6 +11,7 @@ import { StateDataModal } from "./components/StateDataModal";
 import { CommandPaletteModal } from "./components/CommandPaletteModal";
 import { ThemeCustomizerModal } from "./components/ThemeCustomizerModal";
 import { DocumentHealthDrawer } from "./components/DocumentHealthDrawer";
+import { initBroadcastSync, subscribePeerCount } from "./core/broadcastSync";
 import {
   Boxes,
   Layers,
@@ -65,6 +66,17 @@ export default function App() {
   const [modalDefaultTab, setModalDefaultTab] = useState<"export" | "snippet" | "import">("export");
   const [leftSidebarCollapsed, setLeftSidebarCollapsed] = useState(false);
   const [rightSidebarCollapsed, setRightSidebarCollapsed] = useState(false);
+  const [peerCount, setPeerCount] = useState(0);
+
+  // Initialize Real-time Cross-Tab Broadcast Synchronization
+  useEffect(() => {
+    const cleanupSync = initBroadcastSync();
+    const unsubscribePeers = subscribePeerCount(setPeerCount);
+    return () => {
+      unsubscribePeers();
+      cleanupSync();
+    };
+  }, []);
 
   // Global Canvas Keyboard Shortcuts
   useEffect(() => {
@@ -253,6 +265,25 @@ export default function App() {
               </>
             )}
           </div>
+
+          {/* Cross-Tab Collaboration Peer Badge */}
+          {peerCount > 0 ? (
+            <div
+              className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-[11px] font-mono text-cyan-300 select-none animate-fade-in"
+              title="Real-time multi-tab synchronization active across open tabs"
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+              <span>{peerCount + 1} Tabs Synced</span>
+            </div>
+          ) : (
+            <div
+              className="hidden xl:flex items-center gap-1.5 px-2 py-1 rounded-lg bg-black/30 border border-white/5 text-[11px] font-mono text-slate-500 select-none"
+              title="BroadcastChannel ready for instant cross-tab synchronization"
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-slate-600" />
+              <span>1 Tab Active</span>
+            </div>
+          )}
 
           {/* Reset to Factory Templates button */}
           <button

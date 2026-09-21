@@ -25,6 +25,7 @@ import {
   loadDraftFromStorage,
   clearDraftFromStorage,
 } from "./draftPersistence";
+import { broadcastStateChange } from "./broadcastSync";
 
 export type ViewportMode = "desktop" | "tablet" | "mobile";
 export type SidebarTab = "palette" | "layers" | "templates" | "json";
@@ -997,6 +998,7 @@ if (typeof window !== "undefined") {
       if (autoSaveTimeout) clearTimeout(autoSaveTimeout);
       autoSaveTimeout = setTimeout(() => {
         saveDraftToStorage(state.pages, state.activePageId, state.themeMode, state.themeConfig);
+        broadcastStateChange(state.pages, state.activePageId, state.themeMode, state.themeConfig);
         useBuilderStore.setState({
           saveStatus: "saved",
           lastSavedAt: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
