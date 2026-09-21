@@ -24,6 +24,8 @@ import {
   Tablet,
   Monitor,
   Check,
+  Component,
+  Unlink,
 } from "lucide-react";
 import clsx from "clsx";
 
@@ -44,6 +46,8 @@ export function PropertyInspectorPanel() {
     updateNodeResponsiveProps,
     insertNodeIntoSlot,
     removeNodeFromSlot,
+    saveNodeAsDefinition,
+    detachDefinitionInstance,
   } = useBuilderStore();
 
   const [activeTab, setActiveTab] = useState<TabMode>("props");
@@ -242,7 +246,51 @@ export function PropertyInspectorPanel() {
             <Hash className="w-3 h-3 text-slate-600" />
             <span>{selectedNode.id}</span>
           </div>
+          {selectedNode.componentId ? (
+            <span className="text-cyan-400 font-semibold flex items-center gap-1">
+              <Component className="w-3 h-3" />
+              <span>#{selectedNode.componentId}</span>
+            </span>
+          ) : (
+            <span>{selectedNode.children?.length || 0} children</span>
+          )}
         </div>
+
+        {/* Instantiated from definition badge & detach button */}
+        {selectedNode.componentId && (
+          <div className="mt-2 p-2 rounded-lg bg-cyan-950/40 border border-cyan-500/30 flex items-center justify-between">
+            <div className="truncate pr-2">
+              <div className="text-[10px] font-semibold text-cyan-300">Template Instance</div>
+              <div className="text-[9px] text-slate-400 font-mono truncate">Def: #{selectedNode.componentId}</div>
+            </div>
+            <button
+              onClick={() => detachDefinitionInstance(selectedNode.id)}
+              className="flex items-center gap-1 px-2 py-0.5 rounded bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-200 text-[10px] font-medium transition-colors shrink-0"
+              title="Detach instance into standalone editable nodes"
+            >
+              <Unlink className="w-3 h-3" />
+              <span>Detach</span>
+            </button>
+          </div>
+        )}
+
+        {/* Save as Reusable Component Template */}
+        {!selectedNode.componentId && selectedNode.id !== document.root.id && (
+          <button
+            onClick={() => {
+              const defaultKey = selectedNode.id.replace(/_[a-z0-9]+$/, "Template");
+              const key = window.prompt("Enter unique key for reusable template definition:", defaultKey);
+              if (!key || !key.trim()) return;
+              const title = window.prompt("Enter display title:", key.trim());
+              saveNodeAsDefinition(selectedNode.id, key.trim(), title?.trim() || key.trim());
+            }}
+            className="mt-2 w-full flex items-center justify-center gap-1.5 px-2.5 py-1 rounded-lg border border-cyan-500/30 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 text-[11px] font-medium transition-colors shadow-sm"
+            title="Save this component sub-tree as a reusable template definition"
+          >
+            <Sparkles className="w-3 h-3 text-cyan-400" />
+            <span>Save as Reusable Template</span>
+          </button>
+        )}
 
         {/* Breakpoint Overrides Selector */}
         <div className="mt-2.5 pt-2 border-t border-white/5 flex items-center justify-between">

@@ -43,6 +43,7 @@ export function CanvasViewport() {
     setPreviewMode,
     selectNode,
     addNode,
+    addDefinitionInstance,
   } = useBuilderStore();
 
   const canvasRef = useRef<HTMLDivElement>(null);
@@ -88,14 +89,19 @@ export function CanvasViewport() {
     e.preventDefault();
     setIsDragOver(false);
 
+    const defKey = e.dataTransfer.getData("application/uidl-definition");
     const widgetType = e.dataTransfer.getData("application/uidl-widget");
-    if (!widgetType) return;
+    if (!defKey && !widgetType) return;
 
     // Check if drop target is a specific element inside canvas
     const targetElement = (e.target as HTMLElement).closest("[data-uidl-id], [id]");
     const targetId = targetElement?.getAttribute("data-uidl-id") || targetElement?.id;
 
-    addNode(targetId || selectedNodeId, widgetType);
+    if (defKey) {
+      addDefinitionInstance(targetId || selectedNodeId, defKey);
+    } else if (widgetType) {
+      addNode(targetId || selectedNodeId, widgetType);
+    }
   };
 
   // Route navigation interceptor in Preview mode

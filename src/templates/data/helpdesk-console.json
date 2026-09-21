@@ -13,15 +13,15 @@
       { "label": "Access & Security", "value": 15 }
     ],
     "ticketQueue": [
-      { "ticketId": "TCK-2027-0104", "customer": "PT Digital Solusi Nusantara", "subject": "Gagal export CSV e-Faktur PPN 11% masa Februari", "priority": "Urgent", "channel": "WhatsApp", "slaCountdown": "24 Menit Tersisa", "assignee": "Rian (Senior L2)", "status": "In Progress" },
-      { "ticketId": "TCK-2027-0105", "customer": "Koperasi Mandiri Syariah", "subject": "Permintaan panduan distribusi SHU RAT tahunan", "priority": "Medium", "channel": "Web Portal", "slaCountdown": "3.5 Jam Tersisa", "assignee": "Siti (Support L1)", "status": "Pending Customer" },
-      { "ticketId": "TCK-2027-0106", "customer": "PT Rekayasa Konstruksi", "subject": "Sinkronisasi progress billing BAP subkontraktor", "priority": "High", "channel": "Email", "slaCountdown": "1.2 Jam Tersisa", "assignee": "Budi (Tech Support)", "status": "In Progress" },
-      { "ticketId": "TCK-2027-0107", "customer": "Nusantara Coffee Roasters", "subject": "Integrasi timbangan bluetooth ke modul roasting", "priority": "Low", "channel": "Web Portal", "slaCountdown": "7.0 Jam Tersisa", "assignee": "Siti (Support L1)", "status": "Open" }
+      { "ticketId": "TCK-2027-0104", "customer": "Global Solutions Corp", "subject": "Failed CSV export for Q4 VAT tax reporting", "priority": "Urgent", "channel": "Chat", "slaCountdown": "24 Min Remaining", "assignee": "Ryan (Senior L2)", "status": "In Progress" },
+      { "ticketId": "TCK-2027-0105", "customer": "Apex Capital Partners", "subject": "Guidance on annual dividend distribution schedule", "priority": "Medium", "channel": "Web Portal", "slaCountdown": "3.5 Hours Remaining", "assignee": "Sarah (Support L1)", "status": "Pending Customer" },
+      { "ticketId": "TCK-2027-0106", "customer": "Constructive Engineering Inc", "subject": "Subcontractor billing milestone sync failure", "priority": "High", "channel": "Email", "slaCountdown": "1.2 Hours Remaining", "assignee": "Michael (Tech Support)", "status": "In Progress" },
+      { "ticketId": "TCK-2027-0107", "customer": "Summit Coffee Roasters", "subject": "Bluetooth scale calibration integration", "priority": "Low", "channel": "Web Portal", "slaCountdown": "7.0 Hours Remaining", "assignee": "Sarah (Support L1)", "status": "Open" }
     ],
     "cannedResponses": [
-      { "kode": "KB-EFAKTUR-01", "judul": "Langkah Ekspor CSV e-Faktur Format Terbaru DJP", "kategori": "Tax & Accounting", "penggunaan": "142 kali", "ratingEfektivitas": "98%" },
-      { "kode": "KB-BOM-ROUTING", "judul": "Cara Konfigurasi Multi-level BOM & Stasiun Kerja", "kategori": "Manufacturing", "penggunaan": "89 kali", "ratingEfektivitas": "95%" },
-      { "kode": "KB-RESET-PASS", "judul": "Prosedur Reset Password & Autentikasi 2FA Akun", "kategori": "Account Security", "penggunaan": "210 kali", "ratingEfektivitas": "99%" }
+      { "code": "KB-VAT-01", "title": "Exporting CSV Financial Reports in Standard Format", "category": "Tax & Accounting", "usage": "142 times", "effectivenessRating": "98%" },
+      { "code": "KB-BOM-ROUTING", "title": "Configuring Multi-level BOM & Workstation Routing", "category": "Manufacturing", "usage": "89 times", "effectivenessRating": "95%" },
+      { "code": "KB-RESET-PASS", "title": "Password Reset Procedures & 2FA Authentication", "category": "Account Security", "usage": "210 times", "effectivenessRating": "99%" }
     ]
   },
   "definitions": {
@@ -54,7 +54,7 @@
             {
               "id": "btn-new-ticket",
               "type": "Button",
-              "props": { "label": "+ Buat Tiket Baru", "variant": "primary" }
+              "props": { "label": "+ Create New Ticket", "variant": "primary" }
             },
             {
               "id": "btn-kb-center",
@@ -74,9 +74,9 @@
             "type": "Card",
             "style": { "flex": "1", "padding": "p-4", "backgroundColor": "{primitives.color.surface}" },
             "children": [
-              { "id": "t-kpi-1", "type": "Text", "props": { "text": "Tiket Terbuka (Aktif)" }, "style": { "fontSize": "text-xs", "textColor": "{primitives.color.textSecondary}" } },
-              { "id": "v-kpi-1", "type": "Text", "props": { "text": "28 Tiket" }, "style": { "fontSize": "text-xl", "fontWeight": "font-bold", "textColor": "{primitives.color.textPrimary}" } },
-              { "id": "s-kpi-1", "type": "Text", "props": { "text": "4 Tiket Prioritas Urgent" }, "style": { "fontSize": "text-xs", "textColor": "#dc2626" } }
+              { "id": "t-kpi-1", "type": "Text", "props": { "text": "Open Active Tickets" }, "style": { "fontSize": "text-xs", "textColor": "{primitives.color.textSecondary}" } },
+              { "id": "v-kpi-1", "type": "Text", "props": { "text": "28 Tickets" }, "style": { "fontSize": "text-xl", "fontWeight": "font-bold", "textColor": "{primitives.color.textPrimary}" } },
+              { "id": "s-kpi-1", "type": "Text", "props": { "text": "4 Urgent Priority Tickets" }, "style": { "fontSize": "text-xs", "textColor": "#dc2626" } }
             ]
           },
           {
@@ -85,8 +85,8 @@
             "style": { "flex": "1", "padding": "p-4", "backgroundColor": "{primitives.color.surface}" },
             "children": [
               { "id": "t-kpi-2", "type": "Text", "props": { "text": "First Response Time (SLA)" }, "style": { "fontSize": "text-xs", "textColor": "{primitives.color.textSecondary}" } },
-              { "id": "v-kpi-2", "type": "Text", "props": { "text": "14 Menit" }, "style": { "fontSize": "text-xl", "fontWeight": "font-bold", "textColor": "#059669" } },
-              { "id": "s-kpi-2", "type": "Text", "props": { "text": "Target < 30 Menit (99.4% Lolos SLA)" }, "style": { "fontSize": "text-xs", "textColor": "#059669" } }
+              { "id": "v-kpi-2", "type": "Text", "props": { "text": "14 Minutes" }, "style": { "fontSize": "text-xl", "fontWeight": "font-bold", "textColor": "#059669" } },
+              { "id": "s-kpi-2", "type": "Text", "props": { "text": "Target < 30 Min (99.4% SLA Met)" }, "style": { "fontSize": "text-xs", "textColor": "#059669" } }
             ]
           },
           {
@@ -94,9 +94,9 @@
             "type": "Card",
             "style": { "flex": "1", "padding": "p-4", "backgroundColor": "{primitives.color.surface}" },
             "children": [
-              { "id": "t-kpi-3", "type": "Text", "props": { "text": "One-Touch Resolution Rate" }, "style": { "fontSize": "text-xs", "textColor": "{primitives.color.textSecondary}" } },
+              { "id": "t-kpi-3", "type": "Text", "props": { "text": "First Contact Resolution" }, "style": { "fontSize": "text-xs", "textColor": "{primitives.color.textSecondary}" } },
               { "id": "v-kpi-3", "type": "Text", "props": { "text": "78.5%" }, "style": { "fontSize": "text-xl", "fontWeight": "font-bold", "textColor": "{primitives.color.textPrimary}" } },
-              { "id": "s-kpi-3", "type": "Text", "props": { "text": "Selesai di Respon Pertama" }, "style": { "fontSize": "text-xs", "textColor": "#059669" } }
+              { "id": "s-kpi-3", "type": "Text", "props": { "text": "Resolved on First Contact" }, "style": { "fontSize": "text-xs", "textColor": "#059669" } }
             ]
           },
           {
@@ -104,9 +104,9 @@
             "type": "Card",
             "style": { "flex": "1", "padding": "p-4", "backgroundColor": "{primitives.color.surface}" },
             "children": [
-              { "id": "t-kpi-4", "type": "Text", "props": { "text": "Kepuasan Pelanggan (CSAT)" }, "style": { "fontSize": "text-xs", "textColor": "{primitives.color.textSecondary}" } },
+              { "id": "t-kpi-4", "type": "Text", "props": { "text": "Customer Satisfaction (CSAT)" }, "style": { "fontSize": "text-xs", "textColor": "{primitives.color.textSecondary}" } },
               { "id": "v-kpi-4", "type": "Text", "props": { "text": "4.92 / 5.0" }, "style": { "fontSize": "text-xl", "fontWeight": "font-bold", "textColor": "#059669" } },
-              { "id": "s-kpi-4", "type": "Text", "props": { "text": "Berdasarkan 480 Rating Pengguna" }, "style": { "fontSize": "text-xs", "textColor": "#059669" } }
+              { "id": "s-kpi-4", "type": "Text", "props": { "text": "Based on 480 Verified Ratings" }, "style": { "fontSize": "text-xs", "textColor": "#059669" } }
             ]
           }
         ]
@@ -121,7 +121,7 @@
             "type": "Card",
             "style": { "flex": "1", "padding": "p-4", "backgroundColor": "{primitives.color.surface}" },
             "children": [
-              { "id": "t-chart-cat", "type": "Text", "props": { "text": "Distribusi Tiket Masuk Berdasarkan Kategori Permasalahan" }, "style": { "fontSize": "text-sm", "fontWeight": "font-semibold", "textColor": "{primitives.color.textPrimary}" } },
+              { "id": "t-chart-cat", "type": "Text", "props": { "text": "Ticket Volume Distribution by Category" }, "style": { "fontSize": "text-sm", "fontWeight": "font-semibold", "textColor": "{primitives.color.textPrimary}" } },
               { "id": "chart-cat", "type": "Chart", "props": { "type": "bar", "data": "$data.ticketCategories" } }
             ]
           }
@@ -132,21 +132,21 @@
         "type": "Card",
         "style": { "padding": "p-4", "backgroundColor": "{primitives.color.surface}" },
         "children": [
-          { "id": "t-title-tickets", "type": "Text", "props": { "text": "Antrean Tiket Masuk & Status SLA (Active Ticket Queue)" }, "style": { "fontSize": "text-sm", "fontWeight": "font-semibold", "textColor": "{primitives.color.textPrimary}" } },
+          { "id": "t-title-tickets", "type": "Text", "props": { "text": "Active Support Tickets & SLA Queue" }, "style": { "fontSize": "text-sm", "fontWeight": "font-semibold", "textColor": "{primitives.color.textPrimary}" } },
           {
             "id": "grid-tickets",
             "type": "DataTable",
             "props": {
               "data": "$data.ticketQueue",
               "columns": [
-                { "key": "ticketId", "label": "No. Tiket" },
-                { "key": "customer", "label": "Nama Klien / Perusahaan" },
-                { "key": "subject", "label": "Subjek Kendala" },
-                { "key": "priority", "label": "Prioritas" },
+                { "key": "ticketId", "label": "Ticket ID" },
+                { "key": "customer", "label": "Customer / Organization" },
+                { "key": "subject", "label": "Subject" },
+                { "key": "priority", "label": "Priority" },
                 { "key": "channel", "label": "Channel" },
-                { "key": "slaCountdown", "label": "Sisa Waktu SLA" },
-                { "key": "assignee", "label": "Agent Penanggung Jawab" },
-                { "key": "status", "label": "Status Tiket" }
+                { "key": "slaCountdown", "label": "SLA Countdown" },
+                { "key": "assignee", "label": "Assigned Agent" },
+                { "key": "status", "label": "Status" }
               ]
             }
           }
@@ -157,18 +157,18 @@
         "type": "Card",
         "style": { "padding": "p-4", "backgroundColor": "{primitives.color.surface}" },
         "children": [
-          { "id": "t-title-canned", "type": "Text", "props": { "text": "Knowledge Base Terpopuler & Canned Responses" }, "style": { "fontSize": "text-sm", "fontWeight": "font-semibold", "textColor": "{primitives.color.textPrimary}" } },
+          { "id": "t-title-canned", "type": "Text", "props": { "text": "Top Knowledge Base & Canned Responses" }, "style": { "fontSize": "text-sm", "fontWeight": "font-semibold", "textColor": "{primitives.color.textPrimary}" } },
           {
             "id": "grid-canned",
             "type": "DataTable",
             "props": {
               "data": "$data.cannedResponses",
               "columns": [
-                { "key": "kode", "label": "Kode Solusi" },
-                { "key": "judul", "label": "Judul Panduan Solusi" },
-                { "key": "kategori", "label": "Kategori Modul" },
-                { "key": "penggunaan", "label": "Frekuensi Dipakai" },
-                { "key": "ratingEfektivitas", "label": "Tingkat Efektivitas" }
+                { "key": "code", "label": "Article Code" },
+                { "key": "title", "label": "Resolution Title" },
+                { "key": "category", "label": "Module Category" },
+                { "key": "usage", "label": "Usage Count" },
+                { "key": "effectivenessRating", "label": "Effectiveness" }
               ]
             }
           }

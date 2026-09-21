@@ -29,7 +29,7 @@
   - `mutate` (collection mutations and transaction flows)
 - **Comprehensive Industry Template Library**:
   - Healthcare & Hospital EMR Console (`hospital-medika-console`)
-  - Islamic Microfinance & Koperasi BMT Console (`koperasi-bmt-console`)
+  - Credit Union & Community Banking Console (`koperasi-bmt-console`)
   - CloudDesk IT Service & Helpdesk Portal (`helpdesk-console`)
   - CRM Sales Pipeline & Opportunity Management (`crm-pipeline-console`)
   - School Academic & Tuition Accounting Console (`school-abc-console`)

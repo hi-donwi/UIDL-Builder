@@ -23,6 +23,9 @@ import {
   ShieldCheck,
   FileText,
   Globe,
+  RotateCcw,
+  Sparkles,
+  Component,
 } from "lucide-react";
 import clsx from "clsx";
 
@@ -42,9 +45,13 @@ interface CommandPaletteModalProps {
 
 export function CommandPaletteModal({ onOpenExportModal, onOpenStateModal }: CommandPaletteModalProps) {
   const {
+    document,
     isCommandPaletteOpen,
     setIsCommandPaletteOpen,
     addNode,
+    addDefinitionInstance,
+    saveNodeAsDefinition,
+    resetToFactoryDefaults,
     selectedNodeId,
     loadTemplate,
     setViewport,
@@ -285,6 +292,59 @@ export function CommandPaletteModal({ onOpenExportModal, onOpenStateModal }: Com
         setIsCommandPaletteOpen(false);
       },
     });
+  }
+
+  // Reset to Defaults Command
+  allCommands.push({
+    id: "tool-reset-defaults",
+    category: "Tool",
+    title: "Reset Draft to Factory Default Templates",
+    subtitle: "Clear offline draft storage and restore default templates",
+    icon: <RotateCcw className="w-4 h-4 text-rose-400" />,
+    action: () => {
+      setIsCommandPaletteOpen(false);
+      if (window.confirm("Reset all screens and state to factory default templates? Any local unsaved edits will be cleared.")) {
+        resetToFactoryDefaults();
+      }
+    },
+  });
+
+  // Save selected as reusable template
+  if (selectedNodeId && selectedNodeId !== document.root.id) {
+    allCommands.push({
+      id: "tool-save-def",
+      category: "Component",
+      title: "Save Selected Component as Reusable Template",
+      subtitle: `Convert node #${selectedNodeId} into a reusable component definition`,
+      icon: <Sparkles className="w-4 h-4 text-cyan-400" />,
+      action: () => {
+        setIsCommandPaletteOpen(false);
+        setTimeout(() => {
+          const defaultKey = selectedNodeId.replace(/_[a-z0-9]+$/, "Template");
+          const key = window.prompt("Enter unique key for reusable template definition:", defaultKey);
+          if (!key || !key.trim()) return;
+          const title = window.prompt("Enter display title:", key.trim());
+          saveNodeAsDefinition(selectedNodeId, key.trim(), title?.trim() || key.trim());
+        }, 50);
+      },
+    });
+  }
+
+  // Reusable Template Insert Commands
+  if (document.definitions) {
+    for (const [defKey, defNode] of Object.entries(document.definitions)) {
+      allCommands.push({
+        id: `def-${defKey}`,
+        category: "Component",
+        title: `Insert Reusable Template: ${defNode.name || defKey}`,
+        subtitle: `Instantiate #${defKey} (${defNode.type}) into canvas`,
+        icon: <Component className="w-4 h-4 text-cyan-400" />,
+        action: () => {
+          addDefinitionInstance(selectedNodeId, defKey);
+          setIsCommandPaletteOpen(false);
+        },
+      });
+    }
   }
 
   // Filter commands by search query

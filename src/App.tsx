@@ -29,6 +29,7 @@ import {
   Database,
   Search,
   Palette,
+  RotateCcw,
 } from "lucide-react";
 import clsx from "clsx";
 
@@ -47,6 +48,9 @@ export default function App() {
     setIsThemeModalOpen,
     isHealthDrawerOpen,
     setIsHealthDrawerOpen,
+    saveStatus,
+    lastSavedAt,
+    resetToFactoryDefaults,
     undo,
     redo,
     duplicateNode,
@@ -228,8 +232,41 @@ export default function App() {
           </button>
         </div>
 
-        {/* Right: Theme Studio, State & Data, Mode Toggle, Export, GitHub */}
+        {/* Right: Auto-Save Status, Reset, Theme Studio, State & Data, Mode Toggle, Export, GitHub */}
         <div className="flex items-center gap-2">
+          {/* Offline Draft Auto-Save Indicator */}
+          <div
+            className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-black/40 border border-white/5 text-[11px] font-mono text-slate-400 select-none"
+            title="Local storage auto-save keeps all pages and edits safe across sessions"
+          >
+            {saveStatus === "saving" ? (
+              <>
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                <span className="text-amber-300">Saving...</span>
+              </>
+            ) : (
+              <>
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                <span className="text-slate-300">
+                  {lastSavedAt ? `Saved ${lastSavedAt}` : "Saved Locally"}
+                </span>
+              </>
+            )}
+          </div>
+
+          {/* Reset to Factory Templates button */}
+          <button
+            onClick={() => {
+              if (window.confirm("Reset all screens and state to factory default templates? Any local unsaved edits will be cleared.")) {
+                resetToFactoryDefaults();
+              }
+            }}
+            className="p-1.5 rounded-lg border border-white/10 hover:bg-rose-500/10 hover:border-rose-500/30 text-slate-400 hover:text-rose-400 text-xs transition-colors"
+            title="Reset to Factory Templates"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+          </button>
+
           <button
             onClick={() => setIsThemeModalOpen(true)}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/10 bg-white/[0.03] hover:bg-white/[0.08] text-slate-300 hover:text-white font-medium text-xs transition-colors"

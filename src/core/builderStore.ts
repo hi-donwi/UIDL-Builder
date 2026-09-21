@@ -13,12 +13,18 @@ import {
   removeSlotChild,
   patchNodeResponsiveProps,
   generateNodeId,
+  cloneNodeWithNewIds,
 } from "./documentOps";
 import { getWidgetDefaultProps } from "../lib/uidlBridge";
 import { validateDocument, type ValidationErrorItem } from "./schemaValidator";
 import { TEMPLATES } from "./templateCatalog";
 import { DEFAULT_THEME_CONFIG, type ThemeCustomizationConfig } from "./themeTokens";
 import { autoFixDocument } from "./documentAuditor";
+import {
+  saveDraftToStorage,
+  loadDraftFromStorage,
+  clearDraftFromStorage,
+} from "./draftPersistence";
 
 export type ViewportMode = "desktop" | "tablet" | "mobile";
 export type SidebarTab = "palette" | "layers" | "templates" | "json";
@@ -107,6 +113,18 @@ export interface BuilderState {
   // Auto-Fix
   autoFixActiveDocument: () => void;
   
+  // Persistence & Draft status
+  saveStatus: "saved" | "saving" | "unsaved";
+  lastSavedAt: string | null;
+  resetToFactoryDefaults: () => void;
+  triggerManualSave: () => void;
+
+  // Custom Component Definitions (Reusable Templates)
+  saveNodeAsDefinition: (nodeId: string, defKey: string, title?: string) => void;
+  removeDefinition: (defKey: string) => void;
+  addDefinitionInstance: (targetParentId: string | null, defKey: string) => void;
+  detachDefinitionInstance: (nodeId: string) => void;
+
   // Tree manipulations
   addNode: (targetParentId: string | null, type: string) => void;
   deleteNode: (nodeId: string) => void;
@@ -140,7 +158,7 @@ const initialPages: BuilderPage[] = [
   },
   {
     id: "page_records",
-    name: "Finances & BMT",
+    name: "Credit Union & Banking",
     route: "/finances",
     document: TEMPLATES[1].document,
   },
@@ -152,28 +170,45 @@ const initialPages: BuilderPage[] = [
   },
 ];
 
-const initialDoc: UIDLDocument = initialPages[0].document;
+const savedDraft = typeof window !== "undefined" ? loadDraftFromStorage() : null;
+
+const resolvedPages: BuilderPage[] =
+  savedDraft?.pages && savedDraft.pages.length > 0 ? savedDraft.pages : initialPages;
+
+const resolvedActivePageId: string =
+  savedDraft?.activePageId && resolvedPages.some((p) => p.id === savedDraft.activePageId)
+    ? savedDraft.activePageId
+    : resolvedPages[0].id;
+
+const resolvedDoc: UIDLDocument =
+  resolvedPages.find((p) => p.id === resolvedActivePageId)?.document || resolvedPages[0].document;
+
+const resolvedThemeMode: "dark" | "light" = savedDraft?.themeMode || "dark";
+const resolvedThemeConfig: ThemeCustomizationConfig = savedDraft?.themeConfig || DEFAULT_THEME_CONFIG;
 
 export const useBuilderStore = create<BuilderState>((set, get) => ({
-  document: initialDoc,
-  selectedNodeId: "header_row",
+  document: resolvedDoc,
+  selectedNodeId: resolvedDoc.root.id,
   hoveredNodeId: null,
   viewport: "desktop",
-  themeMode: "dark",
-  themeConfig: DEFAULT_THEME_CONFIG,
+  themeMode: resolvedThemeMode,
+  themeConfig: resolvedThemeConfig,
   canvasZoom: 100,
   previewMode: false,
   showGrid: true,
   activeSidebarTab: "palette",
-  validationErrors: [],
+  validationErrors: validateDocument(resolvedDoc).errors,
   
   isCommandPaletteOpen: false,
   isThemeModalOpen: false,
   isActionSimulatorOpen: false,
   isHealthDrawerOpen: false,
 
-  pages: initialPages,
-  activePageId: initialPages[0].id,
+  pages: resolvedPages,
+  activePageId: resolvedActivePageId,
+
+  saveStatus: savedDraft ? "saved" : "unsaved",
+  lastSavedAt: savedDraft ? "Restored from draft" : null,
 
   actionLogs: [],
   mockLatencyMs: 150,
@@ -354,6 +389,170 @@ export const useBuilderStore = create<BuilderState>((set, get) => ({
   clearActionLogs: () => set({ actionLogs: [] }),
   setMockLatencyMs: (mockLatencyMs) => set({ mockLatencyMs }),
   setMockHttpStatus: (mockHttpStatus) => set({ mockHttpStatus }),
+
+  // Persistence & Draft Controls
+  resetToFactoryDefaults: () => {
+    clearDraftFromStorage();
+    const resetDoc = initialPages[0].document;
+    const val = validateDocument(resetDoc);
+    set({
+      pages: initialPages,
+      activePageId: initialPages[0].id,
+      document: resetDoc,
+      selectedNodeId: resetDoc.root.id,
+      validationErrors: val.errors,
+      themeMode: "dark",
+      themeConfig: DEFAULT_THEME_CONFIG,
+      saveStatus: "saved",
+      lastSavedAt: "Defaults Restored",
+      history: { past: [], future: [] },
+      canUndo: false,
+      canRedo: false,
+    });
+  },
+
+  triggerManualSave: () => {
+    const { pages, activePageId, themeMode, themeConfig } = get();
+    saveDraftToStorage(pages, activePageId, themeMode, themeConfig);
+    set({
+      saveStatus: "saved",
+      lastSavedAt: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
+    });
+  },
+
+  // Custom Component Definitions (Reusable Templates)
+  saveNodeAsDefinition: (nodeId: string, defKey: string, title?: string) => {
+    const { document, pages, activePageId, history } = get();
+    const node = findNodeById(document.root, nodeId);
+    if (!node) return;
+
+    // Deep clone node sub-tree and remove componentId if present
+    const defNode: UIDLNode = JSON.parse(JSON.stringify(node));
+    delete defNode.componentId;
+    if (title) defNode.name = title;
+
+    const newDefs = {
+      ...(document.definitions || {}),
+      [defKey]: defNode,
+    };
+
+    const newDoc: UIDLDocument = {
+      ...document,
+      definitions: newDefs,
+    };
+
+    const val = validateDocument(newDoc);
+    const updatedPages = pages.map((p) => (p.id === activePageId ? { ...p, document: newDoc } : p));
+
+    set({
+      document: newDoc,
+      pages: updatedPages,
+      validationErrors: val.errors,
+      history: { past: [...history.past, document], future: [] },
+      canUndo: true,
+      canRedo: false,
+    });
+  },
+
+  removeDefinition: (defKey: string) => {
+    const { document, pages, activePageId, history } = get();
+    if (!document.definitions || !document.definitions[defKey]) return;
+
+    const newDefs = { ...document.definitions };
+    delete newDefs[defKey];
+
+    const newDoc: UIDLDocument = {
+      ...document,
+      definitions: Object.keys(newDefs).length > 0 ? newDefs : undefined,
+    };
+
+    const val = validateDocument(newDoc);
+    const updatedPages = pages.map((p) => (p.id === activePageId ? { ...p, document: newDoc } : p));
+
+    set({
+      document: newDoc,
+      pages: updatedPages,
+      validationErrors: val.errors,
+      history: { past: [...history.past, document], future: [] },
+      canUndo: true,
+      canRedo: false,
+    });
+  },
+
+  addDefinitionInstance: (targetParentId: string | null, defKey: string) => {
+    const { document, selectedNodeId, pages, activePageId, history } = get();
+    const defNode = document.definitions?.[defKey];
+    if (!defNode) return;
+
+    const parentId = targetParentId || selectedNodeId || document.root.id;
+    const instanceNode: UIDLNode = {
+      id: generateNodeId(defNode.type),
+      type: defNode.type,
+      componentId: defKey,
+      name: defNode.name ? `${defNode.name} (Instance)` : `${defKey} (Instance)`,
+      props: {},
+    };
+
+    const newRoot = insertChildNode(document.root, parentId, instanceNode);
+    const newDoc: UIDLDocument = {
+      ...document,
+      root: newRoot,
+    };
+
+    const val = validateDocument(newDoc);
+    const updatedPages = pages.map((p) => (p.id === activePageId ? { ...p, document: newDoc } : p));
+
+    set({
+      document: newDoc,
+      pages: updatedPages,
+      selectedNodeId: instanceNode.id,
+      validationErrors: val.errors,
+      history: { past: [...history.past, document], future: [] },
+      canUndo: true,
+      canRedo: false,
+    });
+  },
+
+  detachDefinitionInstance: (nodeId: string) => {
+    const { document, pages, activePageId, history } = get();
+    const target = findNodeById(document.root, nodeId);
+    if (!target || !target.componentId || !document.definitions?.[target.componentId]) return;
+
+    const defNode = document.definitions[target.componentId];
+    const detached = cloneNodeWithNewIds(defNode);
+    detached.id = target.id;
+    detached.name = target.name || defNode.name;
+    detached.props = { ...(defNode.props || {}), ...(target.props || {}) };
+    detached.style = { ...(defNode.style || {}), ...(target.style || {}) };
+    delete detached.componentId;
+
+    function replaceNode(curr: UIDLNode): UIDLNode {
+      if (curr.id === nodeId) return detached;
+      if (!curr.children) return curr;
+      return {
+        ...curr,
+        children: curr.children.map(replaceNode),
+      };
+    }
+
+    const newRoot = replaceNode(document.root);
+    const newDoc: UIDLDocument = {
+      ...document,
+      root: newRoot,
+    };
+
+    const val = validateDocument(newDoc);
+    const updatedPages = pages.map((p) => (p.id === activePageId ? { ...p, document: newDoc } : p));
+
+    set({
+      document: newDoc,
+      pages: updatedPages,
+      validationErrors: val.errors,
+      history: { past: [...history.past, document], future: [] },
+      canUndo: true,
+      canRedo: false,
+    });
+  },
 
   // 1-Click Auto-Fix
   autoFixActiveDocument: () => {
@@ -782,3 +981,28 @@ export const useBuilderStore = create<BuilderState>((set, get) => ({
     });
   },
 }));
+
+// Automatic LocalStorage Persistence Subscription
+let autoSaveTimeout: ReturnType<typeof setTimeout> | null = null;
+
+if (typeof window !== "undefined") {
+  useBuilderStore.subscribe((state, prevState) => {
+    if (
+      state.pages !== prevState.pages ||
+      state.activePageId !== prevState.activePageId ||
+      state.themeMode !== prevState.themeMode ||
+      state.themeConfig !== prevState.themeConfig
+    ) {
+      useBuilderStore.setState({ saveStatus: "saving" });
+      if (autoSaveTimeout) clearTimeout(autoSaveTimeout);
+      autoSaveTimeout = setTimeout(() => {
+        saveDraftToStorage(state.pages, state.activePageId, state.themeMode, state.themeConfig);
+        useBuilderStore.setState({
+          saveStatus: "saved",
+          lastSavedAt: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        });
+      }, 500);
+    }
+  });
+}
+

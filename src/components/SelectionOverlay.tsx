@@ -1,10 +1,10 @@
 import React from "react";
 import { useBuilderStore } from "../core/builderStore";
 import { findParentNode } from "../core/documentOps";
-import { Copy, Trash2, ArrowUp, Tag } from "lucide-react";
+import { Copy, Trash2, ArrowUp, Tag, Sparkles } from "lucide-react";
 
 export function SelectionOverlay() {
-  const { document, selectedNodeId, selectNode, duplicateNode, deleteNode } = useBuilderStore();
+  const { document, selectedNodeId, selectNode, duplicateNode, deleteNode, saveNodeAsDefinition } = useBuilderStore();
 
   if (!selectedNodeId) return null;
 
@@ -32,6 +32,20 @@ export function SelectionOverlay() {
 
       {!isRoot && (
         <>
+          <button
+            onClick={() => {
+              const defaultKey = selectedNodeId.replace(/_[a-z0-9]+$/, "Template");
+              const key = window.prompt("Enter unique key for reusable template (e.g. metricCard, navbarHeader):", defaultKey);
+              if (!key || !key.trim()) return;
+              const title = window.prompt("Enter display label for template catalog:", key.trim());
+              saveNodeAsDefinition(selectedNodeId, key.trim(), title?.trim() || key.trim());
+            }}
+            title="Save as Reusable Component Template"
+            className="p-1 hover:bg-cyan-500/20 hover:text-cyan-300 rounded transition-colors text-slate-300"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+          </button>
+
           <button
             onClick={() => duplicateNode(selectedNodeId)}
             title="Duplicate component"
