@@ -12,6 +12,7 @@ import { CommandPaletteModal } from "./components/CommandPaletteModal";
 import { ThemeCustomizerModal } from "./components/ThemeCustomizerModal";
 import { DocumentHealthDrawer } from "./components/DocumentHealthDrawer";
 import { initBroadcastSync, subscribePeerCount } from "./core/broadcastSync";
+import { validateDocument } from "./core/schemaValidator";
 import {
   Boxes,
   Layers,
@@ -59,6 +60,7 @@ export default function App() {
     selectNode,
     setThemeMode,
     setActiveSidebarTab,
+    setDocument,
   } = useBuilderStore();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -67,6 +69,23 @@ export default function App() {
   const [leftSidebarCollapsed, setLeftSidebarCollapsed] = useState(false);
   const [rightSidebarCollapsed, setRightSidebarCollapsed] = useState(false);
   const [peerCount, setPeerCount] = useState(0);
+
+  // Auto-import pending UIDL document from Agent-Control companion
+  useEffect(() => {
+    try {
+      const pending = localStorage.getItem("uidl_builder_import");
+      if (pending) {
+        const parsed = JSON.parse(pending);
+        const val = validateDocument(parsed);
+        if (val.isValid) {
+          setDocument(parsed);
+          localStorage.removeItem("uidl_builder_import");
+        }
+      }
+    } catch (e) {
+      console.warn("[UIDL Studio] Auto-import error:", e);
+    }
+  }, [setDocument]);
 
   // Initialize Real-time Cross-Tab Broadcast Synchronization
   useEffect(() => {
