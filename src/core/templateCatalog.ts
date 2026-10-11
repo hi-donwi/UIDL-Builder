@@ -6,6 +6,7 @@ import helpdeskJson from "../templates/data/helpdesk-console.json";
 import crmPipelineJson from "../templates/data/crm-pipeline-console.json";
 import schoolAbcJson from "../templates/data/school-abc-console.json";
 import saasGrowthJson from "../templates/data/saas-growth-suite.json";
+import invoicingErpJson from "../templates/data/invoicing-erp-console.json";
 
 export type TemplateCategory = "industry" | "dashboard" | "form" | "blank";
 
@@ -19,6 +20,14 @@ export interface DocumentTemplate {
 }
 
 export const TEMPLATES: DocumentTemplate[] = [
+  {
+    id: "invoicing-erp-console",
+    name: "Kerangka Invoicing & Billing ERP",
+    category: "industry",
+    description: "Multi-currency invoicing, Customer entities, receivable aging metrics, and state transitions (draft/sent/paid/void) generated with Kerangka.",
+    tags: ["ERP", "Billing", "Invoicing", "Kerangka", "Finance"],
+    document: invoicingErpJson as unknown as UIDLDocument,
+  },
   {
     id: "hospital-medika-console",
     name: "Healthcare & Hospital EMR",
