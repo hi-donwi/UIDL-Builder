@@ -46,12 +46,12 @@ describe("exportGenerators", () => {
     expect(code).toContain("<UIDocumentRenderer");
   });
 
-  it("generates clean Flutter Dart snippet referencing uidl_runtime", () => {
+  it("generates clean Flutter Dart snippet referencing uidl_flutter", () => {
     const code = generateFlutterSnippet(sampleDoc, "light");
-    expect(code).toContain("import 'package:uidl_runtime/uidl_runtime.dart';");
+    expect(code).toContain("import 'package:uidl_flutter/uidl_flutter.dart';");
     expect(code).toContain("class DashboardAnalytics extends StatelessWidget");
-    expect(code).toContain("UidlWidgetTree(");
-    expect(code).toContain("meridianLightTheme");
+    expect(code).toContain("UidlRenderer(");
+    expect(code).toContain("UidlPresets.meridianLight");
   });
 
   it("generates clean Android Jetpack Compose snippet", () => {

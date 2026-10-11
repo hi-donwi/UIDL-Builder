@@ -71,19 +71,19 @@ export default function ${componentName}() {
 }
 
 /**
- * Generate Flutter (Dart) boilerplate using uidl_runtime Flutter semantic core.
+ * Generate Flutter (Dart) boilerplate using official uidl_flutter runtime.
  */
 export function generateFlutterSnippet(doc: UIDLDocument, themeMode: "dark" | "light" = "dark"): string {
   const componentName = sanitizeIdentifier(doc.name, "UidlScreen");
   const jsonStr = JSON.stringify(doc, null, 2);
-  const themeVar = themeMode === "light" ? "meridianLightTheme" : "meridianDarkTheme";
+  const themePreset = themeMode === "light" ? "UidlPresets.meridianLight.toThemeData()" : "UidlPresets.meridianDark.toThemeData()";
 
   return `import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:uidl_runtime/uidl_runtime.dart';
+import 'package:uidl_flutter/uidl_flutter.dart';
 
 /// Generated screen for UIDL Document: ${doc.name || doc.id || "UidlDocument"}
-/// Requirements: flutter pub add uidl_runtime
+/// Requirements: flutter pub add uidl_flutter
 class ${componentName} extends StatelessWidget {
   const ${componentName}({super.key});
 
@@ -99,11 +99,16 @@ ${jsonStr}
     return Scaffold(
       backgroundColor: ${themeMode === "light" ? "const Color(0xFFF8FAFC)" : "const Color(0xFF0F172A)"},
       body: SafeArea(
-        child: UidlWidgetTree(
+        child: UidlRenderer(
           document: document,
-          theme: ${themeVar},
-          onAction: (UidlAction action) {
-            debugPrint('UIDL Action: \${action.type} -> \${action.target}');
+          theme: ${themePreset},
+          onNavigate: (route) {
+            debugPrint('Navigate: \$route');
+          },
+          onSnackbar: (message, {type, durationMs}) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(message)),
+            );
           },
         ),
       ),

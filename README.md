@@ -58,7 +58,7 @@ Clone the repository and install dependencies:
 ```bash
 git clone git@github.com:hi-donwi/UIDL-Builder.git
 cd UIDL-Builder
-npm install
+corepack pnpm install --frozen-lockfile
 ```
 
 ### Running Locally
@@ -66,7 +66,7 @@ npm install
 Start the Vite development server:
 
 ```bash
-npm run dev
+pnpm run dev
 ```
 
 Open `http://localhost:3300` in your browser.
@@ -76,7 +76,7 @@ Open `http://localhost:3300` in your browser.
 Compile TypeScript and build the optimized production bundle:
 
 ```bash
-npm run build
+pnpm run build
 ```
 
 ---
