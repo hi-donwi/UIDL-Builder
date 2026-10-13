@@ -17,7 +17,7 @@ import {
 } from "./documentOps";
 import { getWidgetDefaultProps } from "../lib/uidlBridge";
 import { validateDocument, type ValidationErrorItem } from "./schemaValidator";
-import { TEMPLATES } from "./templateCatalog";
+import { TEMPLATES, templateById } from "./templateCatalog";
 import { DEFAULT_THEME_CONFIG, type ThemeCustomizationConfig } from "./themeTokens";
 import { autoFixDocument } from "./documentAuditor";
 import {
@@ -155,19 +155,19 @@ const initialPages: BuilderPage[] = [
     id: "page_overview",
     name: "Overview",
     route: "/dashboard",
-    document: TEMPLATES[0].document,
+    document: templateById("hospital-medika-console").document,
   },
   {
     id: "page_records",
     name: "Credit Union & Banking",
     route: "/finances",
-    document: TEMPLATES[1].document,
+    document: templateById("koperasi-bmt-console").document,
   },
   {
     id: "page_crm",
     name: "CRM Deals",
     route: "/deals",
-    document: TEMPLATES[3].document,
+    document: templateById("crm-pipeline-console").document,
   },
 ];
 
