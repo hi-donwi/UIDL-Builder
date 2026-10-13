@@ -1,11 +1,11 @@
 import { describe, it, expect } from "vitest";
-import invoicingErpJson from "../../templates/data/invoicing-erp-console.json";
+import gallery from "uidl-runtime/catalog/gallery.json";
 import { validateDocument } from "../schemaValidator";
 import { generateReactSnippet, generateFlutterSnippet, generateComposeSnippet } from "../exportGenerators";
 import type { UIDLDocument } from "uidl-runtime";
 
 describe("Triad End-to-End Integration (Kerangka -> UIDL-Builder -> UIDL-Runtime)", () => {
-  const doc = invoicingErpJson as unknown as UIDLDocument;
+  const doc = gallery.entries.find((e) => e.id === "invoicing-erp-console")!.documents.en as unknown as UIDLDocument;
 
   it("validates Kerangka Invoicing ERP console document schema without errors", () => {
     const result = validateDocument(doc);

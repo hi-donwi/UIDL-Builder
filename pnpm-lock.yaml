@@ -24,8 +24,8 @@ importers:
         specifier: ^3.6.0
         version: 3.7.0
       uidl-runtime:
-        specifier: ^0.1.4
-        version: 0.1.4(@dnd-kit/core@6.3.1(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+        specifier: ^0.1.6
+        version: 0.1.6(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       zod:
         specifier: ^3.24.2
         version: 3.25.76
@@ -903,8 +903,8 @@ packages:
     engines: {node: '>=14.17'}
     hasBin: true
 
-  uidl-runtime@0.1.4:
-    resolution: {integrity: sha512-db3P/Go2wfhhwMFW5NVg8ZNgwQGm6rmu7MpSJyJ7zPYpM8Jo77ze9RJ4z7FBxfg7okr1RBdssaIVyngLvj9bBQ==}
+  uidl-runtime@0.1.6:
+    resolution: {integrity: sha512-izhNEpS7hXHcAwRGmbUTJyzq1nL8vrwUxx9Abt+qYHMaCSqzXJB7Ixa+nyEGV/8WOec51ioOwhgUjyn7I4mJog==}
     engines: {node: '>=20.11'}
     hasBin: true
     peerDependencies:
@@ -1730,8 +1730,9 @@ snapshots:
 
   typescript@5.7.3: {}
 
-  uidl-runtime@0.1.4(@dnd-kit/core@6.3.1(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0):
+  uidl-runtime@0.1.6(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0):
     dependencies:
+      '@dnd-kit/core': 6.3.1(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@dnd-kit/sortable': 10.0.0(@dnd-kit/core@6.3.1(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react@19.3.0)
       '@dnd-kit/utilities': 3.2.2(react@19.3.0)
       clsx: 2.1.1
@@ -1741,7 +1742,6 @@ snapshots:
       zod: 4.6.5
       zustand: 5.0.15(@types/react@19.3.0)(react@19.3.0)
     transitivePeerDependencies:
-      - '@dnd-kit/core'
       - '@types/react'
       - immer
       - use-sync-external-store
