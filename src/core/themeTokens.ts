@@ -170,10 +170,17 @@ export function generateCanvasStyleVars(
   const font = FONT_PRESETS[config.fontFamily] || FONT_PRESETS.inter;
   const palette = ACCENT_PALETTES[config.accentColor] || ACCENT_PALETTES.cyan;
 
+  const radius = RADIUS_PRESETS[config.radius] || RADIUS_PRESETS.rounded;
+
   return {
     ...vars,
     "--color-primary": config.customPrimaryHex || palette.primary,
     "--color-primary-hover": palette.hover,
+    "--uidl-radius-control": radius.md,
+    "--uidl-radius-card": radius.lg,
+    "--uidl-field-gap": "1rem",
+    "--uidl-action-gap": "1rem",
+    "--uidl-section-gap": "1.5rem",
     fontFamily: font.stack,
   };
 }

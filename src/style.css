@@ -9,6 +9,11 @@
   --color-canvas-surface: #161b22;
   --color-canvas-border: #30363d;
   --color-canvas-subtle: #21262d;
+
+  /* Enterprise UI/UX invariants: uniform corner radii, minimum 16px element spacing, and card elevation */
+  --uidl-radius-control: 0.375rem;
+  --uidl-radius-card: 0.75rem;
+  --uidl-spacing-element-min: 1rem;
 }
 
 /* Canvas Grid Pattern */
