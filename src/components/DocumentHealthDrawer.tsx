@@ -172,6 +172,8 @@ export function DocumentHealthDrawer() {
                         ? "bg-amber-500/15 text-amber-400 border border-amber-500/30"
                         : issue.category === "binding"
                         ? "bg-purple-500/15 text-purple-400 border border-purple-500/30"
+                        : issue.category === "layout"
+                        ? "bg-teal-500/15 text-teal-400 border border-teal-500/30"
                         : "bg-blue-500/15 text-blue-400 border border-blue-500/30"
                     )}
                   >

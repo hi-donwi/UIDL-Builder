@@ -6,7 +6,7 @@ export interface AuditIssue {
   id: string;
   nodeId?: string;
   severity: "error" | "warning" | "info";
-  category: "schema" | "a11y" | "integrity" | "binding";
+  category: "schema" | "a11y" | "integrity" | "binding" | "layout";
   title: string;
   description: string;
   canAutoFix: boolean;
@@ -151,6 +151,30 @@ export function auditDocument(doc: UIDLDocument): AuditReport {
     });
   }
 
+  // 4. Layout & Container policy check
+  const layout = doc.layout as { container?: string; maxWidth?: string; padding?: string } | undefined;
+  if (!layout || !layout.container) {
+    issues.push({
+      id: "layout-missing-container",
+      severity: "info",
+      category: "layout",
+      title: "Document missing fluid layout container configuration",
+      description: "Standard UIDL documents declare a layout configuration (e.g. container: 'constrained', maxWidth: '80rem', padding: 'responsive') to ensure optimal display on large and small viewports.",
+      canAutoFix: true,
+      autoFixAction: "Apply standard constrained layout (80rem)",
+    });
+  } else if (layout.container === "constrained" && !layout.maxWidth) {
+    issues.push({
+      id: "layout-constrained-no-maxwidth",
+      severity: "info",
+      category: "layout",
+      title: "Constrained layout missing explicit maxWidth",
+      description: "Constrained layout should ideally specify an explicit maxWidth (such as '80rem' or '1280px').",
+      canAutoFix: true,
+      autoFixAction: "Set maxWidth: '80rem'",
+    });
+  }
+
   const errorCount = issues.filter((i) => i.severity === "error").length;
   const warningCount = issues.filter((i) => i.severity === "warning").length;
   const infoCount = issues.filter((i) => i.severity === "info").length;
@@ -170,6 +194,17 @@ export function autoFixDocument(doc: UIDLDocument): UIDLDocument {
   const docClone: UIDLDocument = JSON.parse(JSON.stringify(doc));
   if (!docClone.version) {
     docClone.version = "1.0.0";
+  }
+
+  // Auto-fix layout
+  if (!docClone.layout) {
+    docClone.layout = {
+      container: "constrained",
+      maxWidth: "80rem",
+      padding: "responsive",
+    };
+  } else if (docClone.layout.container === "constrained" && !docClone.layout.maxWidth) {
+    docClone.layout.maxWidth = "80rem";
   }
 
   const seenIds = new Set<string>();
