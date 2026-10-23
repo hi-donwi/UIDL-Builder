@@ -4,6 +4,9 @@
   "private": false,
   "description": "Visual schema studio and visual editor for UIDL documents, built with UIDL-Runtime",
   "type": "module",
+  "engines": {
+    "node": ">=22.23.4 <23 || >=24.22.1 <25 || >=26.12.1 <27"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
