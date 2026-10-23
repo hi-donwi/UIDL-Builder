@@ -25,7 +25,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: '22.23.4'
       - name: Install Dependencies
         run: corepack enable && corepack prepare pnpm@10.18.1 --activate && pnpm install --frozen-lockfile
 
