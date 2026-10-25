@@ -45,21 +45,36 @@ export function generateReactSnippet(doc: UIDLDocument, themeMode: "dark" | "lig
   const componentName = sanitizeIdentifier(doc.name, "UidlScreen");
   const jsonStr = JSON.stringify(doc, null, 2);
   const themeName = themeMode === "light" ? "meridianLightTheme" : "meridianDarkTheme";
+  const hasPresentationPreset = Boolean(doc.presentationPreset);
+  const presentationComment = doc.presentationPreset
+    ? `// Presentation preset: ${doc.presentationPreset.id}@${doc.presentationPreset.version} (resolved by uidl-runtime catalog)`
+    : "// Presentation preset: none";
+  const presentationImport = hasPresentationPreset ? ", presentationPresetCatalog" : "";
+  const presentationTheme = hasPresentationPreset
+    ? `
+const presentationTheme = documentData.presentationPreset
+  ? presentationPresetCatalog.get(documentData.presentationPreset.id)?.themePresets[${JSON.stringify(themeMode)}]?.theme
+  : undefined;
+`
+    : "";
+  const renderedTheme = hasPresentationPreset ? `presentationTheme ?? ${themeName}` : themeName;
 
   return `import React from "react";
-import { UIDocumentRenderer, ${themeName} } from "uidl-runtime";
+import { UIDocumentRenderer, ${themeName}${presentationImport} } from "uidl-runtime";
 import type { UIDLDocument } from "uidl-runtime";
 import "uidl-runtime/style.css";
 
+${presentationComment}
 // Document Schema: ${doc.id || "uidl-document"} (v${doc.version || "1.0.0"})
 const documentData: UIDLDocument = ${jsonStr};
+${presentationTheme}
 
 export default function ${componentName}() {
   return (
     <main className="w-full min-h-screen bg-slate-950 text-slate-100 flex flex-col">
       <UIDocumentRenderer
         document={documentData}
-        theme={${themeName}}
+        theme={${renderedTheme}}
         onAction={(action) => {
           console.log("[UIDL Action Triggered]", action);
         }}
@@ -77,11 +92,15 @@ export function generateFlutterSnippet(doc: UIDLDocument, themeMode: "dark" | "l
   const componentName = sanitizeIdentifier(doc.name, "UidlScreen");
   const jsonStr = JSON.stringify(doc, null, 2);
   const themePreset = themeMode === "light" ? "UidlPresets.meridianLight.toThemeData()" : "UidlPresets.meridianDark.toThemeData()";
+  const presentationComment = doc.presentationPreset
+    ? `/// Presentation preset: ${doc.presentationPreset.id}@${doc.presentationPreset.version} (resolved by the host runtime)`
+    : "/// Presentation preset: none";
 
   return `import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:uidl_flutter/uidl_flutter.dart';
 
+${presentationComment}
 /// Generated screen for UIDL Document: ${doc.name || doc.id || "UidlDocument"}
 /// Requirements: flutter pub add uidl_flutter
 class ${componentName} extends StatelessWidget {
@@ -125,6 +144,9 @@ export function generateComposeSnippet(doc: UIDLDocument, themeMode: "dark" | "l
   const componentName = sanitizeIdentifier(doc.name, "UidlScreen");
   const jsonStr = JSON.stringify(doc, null, 2);
   const themeRef = themeMode === "light" ? "MeridianTheme.Light" : "MeridianTheme.Dark";
+  const presentationComment = doc.presentationPreset
+    ? ` * Presentation preset: ${doc.presentationPreset.id}@${doc.presentationPreset.version} (resolved by the host runtime)`
+    : " * Presentation preset: none";
 
   return `package com.example.uidl.ui
 
@@ -137,6 +159,7 @@ import io.uidl.runtime.compose.rememberUidlDocument
 import io.uidl.runtime.theme.MeridianTheme
 
 /**
+${presentationComment}
  * Generated Jetpack Compose screen for UIDL Document: ${doc.name || doc.id || "UidlDocument"}
  * Dependency: implementation("io.uidl:runtime-compose:0.1.0")
  */

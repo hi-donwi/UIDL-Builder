@@ -28,6 +28,7 @@
   - `api` (REST HTTP requests with method configuration)
   - `mutate` (collection mutations and transaction flows)
 - **Template Gallery from UIDL-Runtime**: the gallery reads `uidl-runtime/catalog/gallery.json`, the one published copy of each ready-made document, validated when `uidl-runtime` is built. Industry consoles (healthcare, credit union, helpdesk, CRM, school, invoicing ERP), SaaS dashboards, and an onboarding form, plus the Builder's own blank canvas. A new template is added to UIDL-Runtime's gallery, not here.
+- **Presentation Preset Catalog from UIDL-Runtime**: the Theme Studio discovers runtime-owned presentation manifests, applies a version-pinned `presentationPreset` reference, and resolves the selected preview theme from the runtime catalog. Builder does not copy preset recipes or theme definitions.
 - **Dynamic Widget Palette**: Autodiscovered from UIDL's component registry (`defaultRegistry.list()`), grouped into *Layout*, *Inputs*, *Typography*, *Data & Tables*, *Navigation*, and *Feedback*.
 - **Live Document Tree & Layer Hierarchy**: Real-time layer tree with instant node selection, duplication, reordering, and deletion.
 - **Adaptive Property Inspector**: Form fields generated automatically from each widget's `ComponentPropDescriptor` (text, number, enum selects, boolean toggles, and direct Tailwind utility classes).

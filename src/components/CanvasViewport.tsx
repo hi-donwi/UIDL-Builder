@@ -3,6 +3,7 @@ import { UIDocumentRenderer, meridianDarkTheme, meridianLightTheme } from "uidl-
 import { useBuilderStore } from "../core/builderStore";
 import { findNodeAncestors } from "../core/documentOps";
 import { buildCustomizedTheme, generateCanvasStyleVars } from "../core/themeTokens";
+import { getPresentationTheme } from "../lib/uidlBridge";
 import { SelectionOverlay } from "./SelectionOverlay";
 import { PageTabBar } from "./PageTabBar";
 import { ActionSimulatorDrawer } from "./ActionSimulatorDrawer";
@@ -53,9 +54,11 @@ export function CanvasViewport() {
   const ancestors = !previewMode && selectedNodeId ? findNodeAncestors(document.root, selectedNodeId) : null;
 
   // Customized theme & dynamic styles
-  const baseTheme = themeMode === "dark" ? meridianDarkTheme : meridianLightTheme;
+  const baseTheme =
+    getPresentationTheme(document.presentationPreset, themeMode) ??
+    (themeMode === "dark" ? meridianDarkTheme : meridianLightTheme);
   const activeTheme = buildCustomizedTheme(baseTheme, themeConfig);
-  const canvasStyleVars = generateCanvasStyleVars(themeMode, themeConfig);
+  const canvasStyleVars = generateCanvasStyleVars(themeMode, themeConfig, baseTheme);
 
   // Click-to-select in canvas
   const handleCanvasClick = (e: React.MouseEvent<HTMLDivElement>) => {

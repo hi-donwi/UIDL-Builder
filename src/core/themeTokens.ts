@@ -162,9 +162,9 @@ export function buildCustomizedTheme(
 
 export function generateCanvasStyleVars(
   themeMode: "light" | "dark",
-  config: ThemeCustomizationConfig
+  config: ThemeCustomizationConfig,
+  baseTheme: Theme = themeMode === "dark" ? meridianDarkTheme : meridianLightTheme,
 ): Record<string, string> {
-  const baseTheme = themeMode === "dark" ? meridianDarkTheme : meridianLightTheme;
   const customized = buildCustomizedTheme(baseTheme, config);
   const vars = themeToCssVariablesMap(customized);
   const font = FONT_PRESETS[config.fontFamily] || FONT_PRESETS.inter;

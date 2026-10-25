@@ -2,10 +2,15 @@ import {
   defaultRegistry,
   meridianDarkTheme,
   meridianLightTheme,
+  presentationPresetCatalog,
   type UIDLDocument,
   type UIDLNode,
   type WidgetManifest,
   type ComponentPropDescriptor,
+  type PresentationPreset,
+  type PresentationPresetReference,
+  type PresentationThemeMode,
+  type Theme,
 } from "uidl-runtime";
 
 export interface WidgetCategoryGroup {
@@ -123,6 +128,26 @@ export function getWidgetDefaultProps(type: string): Record<string, unknown> {
   }
 
   return props;
+}
+
+export function getPresentationPresets(): PresentationPreset[] {
+  return presentationPresetCatalog.list();
+}
+
+export function getPresentationPreset(
+  reference?: PresentationPresetReference,
+): PresentationPreset | undefined {
+  if (!reference) return undefined;
+
+  const preset = presentationPresetCatalog.get(reference.id);
+  return preset?.version === reference.version ? preset : undefined;
+}
+
+export function getPresentationTheme(
+  reference: PresentationPresetReference | undefined,
+  mode: PresentationThemeMode,
+): Theme | undefined {
+  return getPresentationPreset(reference)?.themePresets[mode]?.theme;
 }
 
 export { meridianDarkTheme, meridianLightTheme };

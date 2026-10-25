@@ -60,4 +60,20 @@ describe("exportGenerators", () => {
     expect(code).toContain("fun DashboardAnalytics(");
     expect(code).toContain("MeridianTheme.Dark");
   });
+
+  it("preserves presentation preset provenance in generated exports", () => {
+    const document = {
+      ...sampleDoc,
+      presentationPreset: { id: "dense-business", version: "0.1.0" },
+    };
+
+    const react = generateReactSnippet(document, "dark");
+    const flutter = generateFlutterSnippet(document, "dark");
+    const compose = generateComposeSnippet(document, "dark");
+
+    expect(react).toContain("presentationPresetCatalog");
+    expect(react).toContain("dense-business@0.1.0");
+    expect(flutter).toContain("dense-business@0.1.0");
+    expect(compose).toContain("dense-business@0.1.0");
+  });
 });

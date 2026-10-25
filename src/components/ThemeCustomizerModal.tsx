@@ -1,5 +1,6 @@
 import React from "react";
 import { useBuilderStore } from "../core/builderStore";
+import { getPresentationPreset, getPresentationPresets } from "../lib/uidlBridge";
 import {
   ACCENT_PALETTES,
   RADIUS_PRESETS,
@@ -27,7 +28,7 @@ interface ThemeCustomizerModalProps {
 }
 
 export function ThemeCustomizerModal({ isOpen, onClose }: ThemeCustomizerModalProps) {
-  const { themeConfig, setThemeConfig, themeMode } = useBuilderStore();
+  const { themeConfig, setThemeConfig, themeMode, document, applyPresentationPreset } = useBuilderStore();
 
   if (!isOpen) return null;
 
@@ -47,6 +48,8 @@ export function ThemeCustomizerModal({ isOpen, onClose }: ThemeCustomizerModalPr
   const currentPalette = ACCENT_PALETTES[currentConfig.accentColor] || ACCENT_PALETTES.cyan;
   const currentRadius = RADIUS_PRESETS[currentConfig.radius] || RADIUS_PRESETS.rounded;
   const currentFont = FONT_PRESETS[currentConfig.fontFamily] || FONT_PRESETS.inter;
+  const presentationPresets = getPresentationPresets();
+  const activePresentationPreset = getPresentationPreset(document.presentationPreset);
 
   return (
     <div
@@ -91,6 +94,58 @@ export function ThemeCustomizerModal({ isOpen, onClose }: ThemeCustomizerModalPr
 
         {/* Body Content */}
         <div className="flex-1 overflow-y-auto p-5 space-y-6 text-xs">
+          {/* Runtime-owned presentation presets */}
+          <div className="p-4 rounded-xl border border-cyan-500/20 bg-cyan-500/[0.06] space-y-3">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h3 className="text-xs font-semibold text-white">Runtime Presentation Presets</h3>
+                <p className="mt-1 text-[11px] leading-relaxed text-slate-400">
+                  Discover and apply presets from UIDL Runtime. Builder stores only the pinned reference.
+                </p>
+              </div>
+              <span className="shrink-0 text-[10px] font-mono text-cyan-300">
+                {presentationPresets.length} available
+              </span>
+            </div>
+
+            <div className="space-y-2">
+              {presentationPresets.map((preset) => {
+                const isActive =
+                  activePresentationPreset?.id === preset.id &&
+                  activePresentationPreset.version === document.presentationPreset?.version;
+
+                return (
+                  <div key={`${preset.id}@${preset.version}`} className="rounded-lg border border-white/10 bg-black/25 p-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <div className="font-semibold text-white">{preset.id}</div>
+                        <div className="mt-0.5 text-[10px] font-mono text-slate-500">
+                          v{preset.version} / {preset.provenance.source}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => applyPresentationPreset(preset.id)}
+                        className={clsx(
+                          "px-2.5 py-1 rounded-md border text-[10px] font-semibold transition-colors",
+                          isActive
+                            ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+                            : "border-cyan-500/30 bg-cyan-500/10 text-cyan-300 hover:bg-cyan-500/20"
+                        )}
+                      >
+                        {isActive ? "Active" : "Apply"}
+                      </button>
+                    </div>
+                    <div className="mt-2 flex flex-wrap gap-1.5 text-[9px] font-mono text-slate-400">
+                      <span className="rounded border border-white/10 px-1.5 py-0.5">{preset.targets.join(", ")}</span>
+                      <span className="rounded border border-white/10 px-1.5 py-0.5">{preset.themes.join(" / ")}</span>
+                      <span className="rounded border border-white/10 px-1.5 py-0.5">{preset.recipes.join(", ")}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
           {/* Section 1: Brand Accent Palette */}
           <div>
             <div className="flex items-center justify-between mb-3">

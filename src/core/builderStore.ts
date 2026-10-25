@@ -1,5 +1,10 @@
 import { create } from "zustand";
-import type { UIDLDocument, UIDLNode } from "uidl-runtime";
+import {
+  applyPresentationPreset as applyRuntimePresentationPreset,
+  presentationPresetCatalog,
+  type UIDLDocument,
+  type UIDLNode,
+} from "uidl-runtime";
 import {
   findNodeById,
   insertChildNode,
@@ -142,6 +147,7 @@ export interface BuilderState {
   updateDocumentMeta: (meta: { name?: string; id?: string }) => void;
   setDocument: (document: UIDLDocument) => void;
   loadTemplate: (templateId: string) => void;
+  applyPresentationPreset: (presetId: string) => void;
   
   // Undo / Redo
   canUndo: boolean;
@@ -936,6 +942,14 @@ export const useBuilderStore = create<BuilderState>((set, get) => ({
     get().setDocument(JSON.parse(JSON.stringify(tpl.document)));
   },
 
+  applyPresentationPreset: (presetId) => {
+    const { document, themeMode } = get();
+    const preset = presentationPresetCatalog.get(presetId);
+    if (!preset) return;
+
+    get().setDocument(applyRuntimePresentationPreset(document, preset, themeMode));
+  },
+
   undo: () => {
     const { history, document, activePageId, pages } = get();
     if (history.past.length === 0) return;
@@ -1007,4 +1021,3 @@ if (typeof window !== "undefined") {
     }
   });
 }
-
