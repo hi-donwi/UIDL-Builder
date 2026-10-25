@@ -24,8 +24,8 @@ importers:
         specifier: ^3.6.0
         version: 3.7.0
       uidl-runtime:
-        specifier: ^0.1.11
-        version: 0.1.11(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+        specifier: ^0.1.12
+        version: 0.1.12(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       zod:
         specifier: ^3.24.2
         version: 3.25.76
@@ -878,8 +878,8 @@ packages:
     engines: {node: '>=14.17'}
     hasBin: true
 
-  uidl-runtime@0.1.11:
-    resolution: {integrity: sha512-1yAyPq1+Dwu3iDvUbVs/4ebh2qA4i+4gVrOAP4AYVTucMeY/BWoaWhY6sPfqASiOQ0M9W5lHB4LBaBvisgnwhg==}
+  uidl-runtime@0.1.12:
+    resolution: {integrity: sha512-+H4xViiI6kOe5qBXqHjbbi+g4Py3qdsDnd12uNw7cgVr/LFI2fyPwcq28r4jXKG4tA5EO0gQVmesET63NIGuhA==}
     engines: {node: '>=22.23.4 <23 || >=24.22.1 <25 || >=26.12.1 <27'}
     hasBin: true
     peerDependencies:
@@ -1683,7 +1683,7 @@ snapshots:
 
   typescript@5.7.3: {}
 
-  uidl-runtime@0.1.11(react-dom@19.3.0(react@19.3.0))(react@19.3.0):
+  uidl-runtime@0.1.12(react-dom@19.3.0(react@19.3.0))(react@19.3.0):
     dependencies:
       zod: 4.6.5
     optionalDependencies:
